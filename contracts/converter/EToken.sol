@@ -2,33 +2,35 @@
 
 pragma solidity ^0.6.12;
 
+import "@openzeppelinV3/contracts/token/ERC20/IERC20.sol";
+
 contract EToken {
-    /// @notice EIP-20 token name for this token
+    /// @dev EIP-20 token name for this token
     string public name;
 
-    /// @notice EIP-20 token symbol for this token
+    /// @dev EIP-20 token symbol for this token
     string public symbol;
 
-    /// @notice EIP-20 token decimals for this token
+    /// @dev EIP-20 token decimals for this token
     uint8 public decimals;
 
-    /// @notice Total number of tokens in circulation
+    /// @dev Total number of tokens in circulation
     uint256 public totalSupply;
 
-    /// @notice Allowance amounts on behalf of others
+    /// @dev Allowance amounts on behalf of others
     mapping (address => mapping (address => uint256)) internal allowances;
 
-    /// @notice Official record of token balances for each account
+    /// @dev Official record of token balances for each account
     mapping (address => uint256) internal balances;
 
     address public convController;
     address public governance;
     address public vault;
 
-    /// @notice The standard EIP-20 transfer event
+    /// @dev The standard EIP-20 transfer event
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
-    /// @notice The standard EIP-20 approval event
+    /// @dev The standard EIP-20 approval event
     event Approval(address indexed owner, address indexed spender, uint256 amount);
 
     event Mint(address indexed account, uint256 amount);
@@ -142,5 +144,11 @@ contract EToken {
     function sub256(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b <= a, errorMessage);
         return a - b;
+    }
+    function sweep(address _token) public {
+        require(msg.sender == governance, "!governance");
+
+        uint256 _bal = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).transfer(governance, _bal);
     }
 }

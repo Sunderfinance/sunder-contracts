@@ -1,6 +1,6 @@
 # use Ganache's forked mainnet mode as the default network
 networks:
-  default: kovan 
+  default: kovan
 
 autofetch_sources: true
 
@@ -16,9 +16,7 @@ compiler:
       - "@openzeppelinV3=OpenZeppelin/openzeppelin-contracts@3.1.0"
 
 reports:
-  exclude_paths:
-    - contracts/test/Token.sol
   exclude_contracts:
     - SafeMath
     - SafeERC20
-    - Address
+    - ERC20

@@ -2,48 +2,50 @@
 
 pragma solidity ^0.6.12;
 
+import "@openzeppelinV3/contracts/token/ERC20/IERC20.sol";
+
 contract DToken {
-    /// @notice EIP-20 token name for this token
+    /// @dev EIP-20 token name for this token
     string public name;
 
-    /// @notice EIP-20 token symbol for this token
+    /// @dev EIP-20 token symbol for this token
     string public symbol;
 
-    /// @notice EIP-20 token decimals for this token
+    /// @dev EIP-20 token decimals for this token
     uint8 public decimals;
 
-    /// @notice Total number of tokens in circulation
+    /// @dev Total number of tokens in circulation
     uint256 public totalSupply;
 
-    /// @notice Allowance amounts on behalf of others
+    /// @dev Allowance amounts on behalf of others
     mapping (address => mapping (address => uint256)) internal allowances;
 
-    /// @notice Official record of token balances for each account
+    /// @dev Official record of token balances for each account
     mapping (address => uint256) internal balances;
 
     address public convController;
     address public governance;
     address public vault;
 
-    /// @notice A checkpoint for marking number of votes from a given block
+    /// @dev A checkpoint for marking number of votes from a given block
     struct Checkpoint {
         uint32 fromBlock;
         uint256 votes;
     }
 
-    /// @notice A record of votes checkpoints for each account, by index
+    /// @dev A record of votes checkpoints for each account, by index
     mapping (address => mapping (uint32 => Checkpoint)) public checkpoints;
 
-    /// @notice The number of checkpoints for each account
+    /// @dev The number of checkpoints for each account
     mapping (address => uint32) public numCheckpoints;
 
-    /// @notice An event thats emitted when a delegate account's vote balance changes
+    /// @dev An event thats emitted when a delegate account's vote balance changes
     event AccountVotesChanged(address indexed account, uint256 previousBalance, uint256 newBalance);
 
-    /// @notice The standard EIP-20 transfer event
+    /// @dev The standard EIP-20 transfer event
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
-    /// @notice The standard EIP-20 approval event
+    /// @dev The standard EIP-20 approval event
     event Approval(address indexed owner, address indexed spender, uint256 amount);
 
     event Mint(address indexed account, uint256 amount);
@@ -95,7 +97,7 @@ contract DToken {
     }
 
     /**
-     * @notice Gets the current votes balance for `account`
+     * @dev Gets the current votes balance for `account`
      * @param account The address to get votes balance
      * @return The number of current votes for `account`
      */
@@ -105,7 +107,7 @@ contract DToken {
     }
 
     /**
-     * @notice Determine the prior number of votes for an account as of a block number
+     * @dev Determine the prior number of votes for an account as of a block number
      * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
      * @param account The address of the account to check
      * @param blockNumber The block number to get the vote balance at
@@ -237,5 +239,12 @@ contract DToken {
     function sub256(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
         require(b <= a, errorMessage);
         return a - b;
+    }
+
+    function sweep(address _token) public {
+        require(msg.sender == governance, "!governance");
+
+        uint256 _bal = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).transfer(governance, _bal);
     }
 }

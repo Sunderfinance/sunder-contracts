@@ -36,7 +36,7 @@ contract ConvController {
         governance = msg.sender;
         controller = _controller;
         reward = _reward;
-        operator = _operator;        
+        operator = _operator;
     }
 
     function setGovernance(address _governance) public {
@@ -150,5 +150,13 @@ contract ConvController {
         uint256 _bal = available(_token);
         IERC20(_token).safeTransfer(controller, _bal);
         IController(controller).earn(_token, _bal);
+    }
+
+    function sweep(address _token) public {
+        require(msg.sender == governance, "!governance");
+        require(dtokens[_token] == address(0), "!address(0)");
+
+        uint256 _bal = available(_token);
+        IERC20(_token).safeTransfer(reward, _bal);
     }
 }

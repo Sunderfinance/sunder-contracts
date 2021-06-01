@@ -46,4 +46,18 @@ contract ForVote {
         require(governor != address(0), "!governor");
         IGovernorDelegate(governor).castVote(_proposalId, 1);
     }
+
+    function proposals(address _comp, uint256 _proposalId) external view returns (uint256 _id, address _proposer,
+        uint256 _eta, uint256 _startBlock, uint256 _endBlock, uint256 _forVotes, uint256 _againstVotes,
+        uint256 _abstainVotes, bool _canceled, bool _executed){
+        address governor = IVoteController(voteController).governors(_comp);
+        require(governor != address(0), "!governor");
+        return IGovernorDelegate(governor).proposals(_proposalId);
+    }
+
+    function state(address _comp, uint256 _proposalId) external view returns (uint8){
+        address governor = IVoteController(voteController).governors(_comp);
+        require(governor != address(0), "!governor");
+        return IGovernorDelegate(governor).state(_proposalId);
+    }
 }

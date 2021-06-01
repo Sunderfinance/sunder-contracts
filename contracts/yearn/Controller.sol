@@ -124,8 +124,8 @@ contract Controller {
         IERC20(_token).safeTransfer(_strategy, _amount);
     }
 
-    function balanceOf(address _token) external view returns (uint256) {
-        return IStrategy(strategies[_token]).balanceOf();
+    function assets(address _token) external view returns (uint256) {
+        return IStrategy(strategies[_token]).assets();
     }
 
     function withdrawAll(address _token) public {

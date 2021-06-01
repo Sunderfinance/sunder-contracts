@@ -20,7 +20,7 @@ interface IOneSplitAudit {
         address destToken,
         uint256 amount,
         uint256 parts,
-        uint256 flags // See constants in IOneSplit.sol
+        uint256 flags
     )
         external
         view

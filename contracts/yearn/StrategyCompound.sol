@@ -41,7 +41,7 @@ contract StrategyCompound {
     // test
     function testAddress(address _want, address _eToken, address _dToken) public {
         want = _want;
-        cComp = _want;
+        cComp = address(0x1201D1777654C65C052C4c401621625e173a357a);
         eToken = _eToken;
         dToken = _dToken;
     }
@@ -52,9 +52,9 @@ contract StrategyCompound {
         if (_balance > debt){
             uint256 _amount = _balance - debt;
             IController(controller).mint(address(want), _amount);
-            debt = _balance;
             uint _fee = _amount.mul(performanceFee).div(performanceMax);
             IERC20(eToken).safeTransfer(IController(controller).vaults(want), _amount.sub(_fee));
+            debt = _balance.sub(_fee);
             IERC20(eToken).safeTransfer(IController(controller).rewards(), _fee);
             IERC20(dToken).safeTransfer(IController(controller).rewards(), _amount);
         }
@@ -173,13 +173,13 @@ contract StrategyCompound {
             cTokens[0] = cComp;
             compController.claimComp(holders, cTokens, false, true);
         }
-        uint256 _balance = balanceOf();
-        if (_balance > debt){
-            uint256 _amount = _balance - debt;
+        uint256 _assets = assets();
+        if (_assets > debt){
+            uint256 _amount = _assets - debt;
             IController(controller).mint(address(want), _amount);
-            debt = _balance;
             uint _fee = _amount.mul(performanceFee).div(performanceMax);
             IERC20(eToken).safeTransfer(IController(controller).vaults(want), _amount.sub(_fee));
+            debt = _assets.sub(_fee);
             IERC20(eToken).safeTransfer(IController(controller).rewards(), _fee);
             IERC20(dToken).safeTransfer(IController(controller).rewards(), _amount);
         }
@@ -202,9 +202,8 @@ contract StrategyCompound {
         return IERC20(cComp).balanceOf(address(this));
     }
 
-    function balanceOf() public view returns (uint256) {
+    function assets() public view returns (uint256) {
         return balanceOfWant().add(balanceCInToken());
     }
-
 
 }

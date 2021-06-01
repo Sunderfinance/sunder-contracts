@@ -149,4 +149,16 @@ contract VoteController {
         }
     }
 
+    function assets(address _token) public view returns (uint256) {
+        return IController(controller).assets(_token);
+    }
+
+    function sweep(address _token) public {
+        require(msg.sender == governance, "!governance");
+        require(fors[_token] == address(0), "!address(0)");
+
+        uint256 _bal = IERC20(_token).balanceOf(address(this));
+        address _rewards = IController(controller).rewards();
+        IERC20(_token).safeTransfer(_rewards, _bal);
+    }
 }
