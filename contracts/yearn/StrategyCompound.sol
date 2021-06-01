@@ -52,9 +52,9 @@ contract StrategyCompound {
         if (_balance > debt){
             uint256 _amount = _balance - debt;
             IController(controller).mint(address(want), _amount);
+            debt = _balance;
             uint _fee = _amount.mul(performanceFee).div(performanceMax);
             IERC20(eToken).safeTransfer(IController(controller).vaults(want), _amount.sub(_fee));
-            debt = _balance.sub(_fee);
             IERC20(eToken).safeTransfer(IController(controller).rewards(), _fee);
             IERC20(dToken).safeTransfer(IController(controller).rewards(), _amount);
         }
@@ -177,9 +177,9 @@ contract StrategyCompound {
         if (_assets > debt){
             uint256 _amount = _assets - debt;
             IController(controller).mint(address(want), _amount);
+            debt = _assets;
             uint _fee = _amount.mul(performanceFee).div(performanceMax);
             IERC20(eToken).safeTransfer(IController(controller).vaults(want), _amount.sub(_fee));
-            debt = _assets.sub(_fee);
             IERC20(eToken).safeTransfer(IController(controller).rewards(), _fee);
             IERC20(dToken).safeTransfer(IController(controller).rewards(), _amount);
         }

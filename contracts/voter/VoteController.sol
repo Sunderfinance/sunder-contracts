@@ -21,7 +21,7 @@ contract VoteController {
     mapping (address => address) public fors;
     mapping (address => address) public abstains;
     mapping (address => address) public governors;
-    mapping (address => uint256) public proposalId;
+    mapping (address => uint256) public proposalIds;
     mapping (address => uint8) public types;
 
     constructor (address _controller, address _operator) public {
@@ -64,9 +64,9 @@ contract VoteController {
 
     function prepareVote(address _comp, uint256 _proposalId, uint256 _against, uint256 _for, uint256 _abstain) public {
         require(msg.sender == operator || msg.sender == governance, "!operator");
-        require(proposalId[_comp] == 0, "!proposalId");
+        require(proposalIds[_comp] == 0, "!proposalId");
         require(types[_comp] == 0, "!types");
-        proposalId[_comp] = _proposalId;
+        proposalIds[_comp] = _proposalId;
         uint256 _amount = _for.add(_against).add(_abstain);
         IController(controller).withdrawVote(_comp, _amount);
 
@@ -100,7 +100,7 @@ contract VoteController {
 
     function returnToken(address _comp, uint256 _proposalId) public {
         require(msg.sender == operator || msg.sender == governance, "!operator");
-        require(proposalId[_comp] == _proposalId, "!proposalId");
+        require(proposalIds[_comp] == _proposalId, "!proposalId");
         uint8 _type = types[_comp];
         require(_type > 0, "!type");
 
@@ -126,11 +126,11 @@ contract VoteController {
 
     function vote(address _comp, uint256 _proposalId) public {
         require(msg.sender == operator || msg.sender == governance, "!operator");
-        require(proposalId[_comp] == _proposalId, "!proposalId");
+        require(proposalIds[_comp] == _proposalId, "!proposalId");
         uint8 _type = types[_comp];
         require(_type > 0, "!type");
 
-        proposalId[_comp] = 0;
+        proposalIds[_comp] = 0;
         types[_comp] = 0;
 
         if (_type >= 4 ) {
@@ -160,5 +160,65 @@ contract VoteController {
         uint256 _bal = IERC20(_token).balanceOf(address(this));
         address _rewards = IController(controller).rewards();
         IERC20(_token).safeTransfer(_rewards, _bal);
+    }
+
+    function setProposalId(address _comp, uint256 _proposalId) public {
+        require(msg.sender == governance, "!governance");
+        proposalIds[_comp] == _proposalId;
+    }
+
+    function setType(address _comp, uint8 _type) public {
+        require(msg.sender == governance, "!governance");
+        types[_comp] = _type;
+    }
+
+    function prepareVoteByAdmin(address _comp, uint256 _proposalId, uint256 _against, uint256 _for, uint256 _abstain) public {
+        require(msg.sender == governance, "!governance");
+
+        uint256 _amount = _for.add(_against).add(_abstain);
+        IController(controller).withdrawVote(_comp, _amount);
+
+        if (_against > 0 ) {
+            address _vote = againsts[_comp];
+            _tranferVote(_comp, _vote, _against);
+        }
+        if (_for > 0 ) {
+            address _vote = fors[_comp];
+            _tranferVote(_comp, _vote, _for);
+        }
+        if (_abstain > 0) {
+            address _vote = abstains[_comp];
+            _tranferVote(_comp, _vote, _abstain);
+        }
+    }
+
+    function returnTokenByAdmin(address _comp) public {
+        require(msg.sender == governance, "!governance");
+
+        address _vote = againsts[_comp];
+        IVote(_vote).returnToken(_comp);
+
+        _vote = fors[_comp];
+        IVote(_vote).returnToken(_comp);
+
+        _vote = abstains[_comp];
+        IVote(_vote).returnToken(_comp);
+
+        uint256 _balance = IERC20(_comp).balanceOf(address(this));
+        IERC20(_comp).safeTransfer(controller, _balance);
+        IController(controller).depositVote(_comp, _balance);
+    }
+
+    function voteByAdmin(address _comp, uint256 _proposalId) public {
+        require(msg.sender == governance, "!governance");
+
+        address _vote = againsts[_comp];
+        IVote(_vote).vote(_comp, _proposalId);
+
+        _vote = fors[_comp];
+        IVote(_vote).vote(_comp, _proposalId);
+
+        _vote = abstains[_comp];
+        IVote(_vote).vote(_comp, _proposalId);
     }
 }
