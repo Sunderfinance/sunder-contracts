@@ -14,6 +14,15 @@ contract StrategyCompound {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
+    address public governance;
+    address public controller;
+    address public strategist;
+    uint256 public debt;
+    bool public claim;
+
+    uint256 public performanceFee = 500;
+    uint256 constant public performanceMax = 10000;
+
     /*
     address constant public want  = address(0xc00e94Cb662C3520282E6f5717214004A7f26888); // comp
     address constant public cComp = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
@@ -29,15 +38,6 @@ contract StrategyCompound {
 
     ICompController constant public compController = ICompController(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
-    uint256 public performanceFee = 500;
-    uint256 constant public performanceMax = 10000;
-
-    uint256 public debt;
-    address public governance;
-    address public controller;
-    address public strategist;
-    bool public claim;
-
     // test
     function testAddress(address _want, address _eToken, address _dToken) public {
         want = _want;
@@ -48,7 +48,7 @@ contract StrategyCompound {
 
     function testHarvest() public {
         require(msg.sender == strategist || msg.sender == governance, "!authorized");
-        uint256 _balance = balanceOfWant();
+        uint256 _balance = balanceWant();
         if (_balance > debt){
             uint256 _amount = _balance - debt;
             IController(controller).mint(address(want), _amount);
@@ -128,7 +128,7 @@ contract StrategyCompound {
     // Withdraw all funds, normally used when migrating strategies
     function withdrawAll(address _receiver) external returns (uint256 _balance) {
         require(msg.sender == controller, "!controller");
-        uint256 _amount = balanceC();
+        uint256 _amount = balanceCComp();
         if (_amount > 0) {
             ICToken(cComp).redeem(_amount);
         }
@@ -182,25 +182,25 @@ contract StrategyCompound {
         }
     }
 
-    function balanceOfWant() public view returns (uint256) {
+    function balanceWant() public view returns (uint256) {
         return IERC20(want).balanceOf(address(this));
     }
 
-    function balanceCInToken() public view returns (uint256) {
+    function balanceCCompToWant() public view returns (uint256) {
         // Mantisa 1e18 to decimals
-        uint256 _amount = balanceC();
+        uint256 _amount = balanceCComp();
         if (_amount > 0) {
             _amount = _amount.mul(ICToken(cComp).exchangeRateStored()).div(1e18);
         }
         return _amount;
     }
 
-    function balanceC() public view returns (uint256) {
+    function balanceCComp() public view returns (uint256) {
         return IERC20(cComp).balanceOf(address(this));
     }
 
     function totalAssets() public view returns (uint256) {
-        return balanceOfWant().add(balanceCInToken());
+        return balanceWant().add(balanceCCompToWant());
     }
 
 }
