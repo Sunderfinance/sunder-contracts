@@ -36,13 +36,13 @@ contract Vote {
         IComp(_comp).delegate(address(this));
     }
 
-    function returnToken(address _comp) public {
+    function returnToken(address _comp, address _receiver) external returns (uint256 _amount) {
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
-        uint256 _balance = IERC20(_comp).balanceOf(address(this));
-        IERC20(_comp).safeTransfer(voteController, _balance);
-    }  
+        _amount = IERC20(_comp).balanceOf(address(this));
+        IERC20(_comp).safeTransfer(_receiver, _amount);
+    }
 
-    function vote(address _comp, uint256 _proposalId) public {
+    function castVote(address _comp, uint256 _proposalId) public {
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
         address governor = IVoteController(voteController).governors(_comp);
         require(governor != address(0), "!governor");

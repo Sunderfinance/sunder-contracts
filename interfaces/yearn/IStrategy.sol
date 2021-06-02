@@ -5,7 +5,6 @@ pragma solidity ^0.6.12;
 
 interface IStrategy {
     function want() external view returns (address);
-    function earn() external;
     function harvest() external;
     function addDebt(uint256) external;
     function setClaim(bool) external;

@@ -27,12 +27,11 @@ contract ConvController {
 
     mapping(address => address) public dtokens;
     mapping(address => address) public etokens;
+    mapping(address => mapping(address => uint256)) public convertAt;
 
-    mapping(address => mapping(address => uint256)) convertAt;
-
-    event PairCreated(address indexed token,address indexed dtoken,address indexed etoken);
-    event Convert(address indexed account,address indexed token, uint256 amount);
-    event Redeem(address indexed account,address indexed token, uint256 amount, uint256 fee);
+    event PairCreated(address indexed token, address indexed dtoken, address indexed etoken);
+    event Convert(address indexed account, address indexed token, uint256 amount);
+    event Redeem(address indexed account, address indexed token, uint256 amount, uint256 fee);
 
     constructor(address _controller, address _reward, address _operator) public {
         governance = msg.sender;
@@ -71,9 +70,64 @@ contract ConvController {
         locks[_token] = false;
     }
 
+    function convertAll(address _token) external {
+        convert(_token, IERC20(_token).balanceOf(msg.sender));
+    }
+
+    function convert(address _token, uint256 _amount) public {
+        require(dtokens[_token] != address(0), "address(0)");
+
+        convertAt[_token][msg.sender] = block.number;
+        IERC20(_token).safeTransferFrom(msg.sender, controller, _amount);
+        _mint(_token, msg.sender, _amount);
+        IController(controller).deposit(_token, _amount);
+        emit Convert(msg.sender, _token, _amount);
+    }
+
+    function mint(address _token, address _minter, uint256 _amount) public {
+        require(msg.sender == controller, "!controller");
+        require(dtokens[_token] != address(0), "address(0)");
+
+        _mint(_token, _minter, _amount);
+        emit Convert(_minter, _token, _amount);
+    }
+
+    function _mint(address _token, address _minter, uint256 _amount) internal {
+        DToken(dtokens[_token]).mint(_minter, _amount);
+        EToken(etokens[_token]).mint(_minter, _amount);
+    }
+
+    function redeemAll(address _token) external {
+        uint256 _amount = maxRedeemAmount(_token);
+        redeem(_token, _amount);
+    }
+
+    function redeem(address _token, uint256 _amount) public {
+        require(!locks[_token], "locking");
+        require(dtokens[_token] != address(0), "address(0)");
+        require(convertAt[_token][msg.sender] < block.number, "!convertAt");
+
+        DToken(dtokens[_token]).burn(msg.sender, _amount);
+        EToken(etokens[_token]).burn(msg.sender, _amount);
+
+        uint256 _balance = IERC20(_token).balanceOf(address(this));
+        if (_balance < _amount) {
+            uint256 _withdraw = _amount.sub(_balance);
+            IController(controller).withdraw(_token, _withdraw);
+            _balance = IERC20(_token).balanceOf(address(this));
+            if (_balance < _amount) {
+                _amount = _balance;
+            }
+        }
+
+        uint256 _fee = _amount.mul(withdrawalFee).div(withdrawalMax);
+        IERC20(_token).safeTransfer(reward, _fee);
+        IERC20(_token).safeTransfer(msg.sender, _amount.sub(_fee));
+        emit Redeem(msg.sender, _token, _amount, _fee);
+    }
+
     function createPair(address _token) external  returns (address _dtoken, address _etoken) {
         require(msg.sender == governance, "!governance");
-        require(_token != address(0), " address(0)");
         require(dtokens[_token] == address(0), "!address(0)");
 
         bytes memory _nameD = abi.encodePacked("dToken ", ERC20(_token).name());
@@ -102,65 +156,31 @@ contract ConvController {
         emit PairCreated(_token, _dtoken, _etoken);
     }
 
-    function convert(address _token, uint256 _amount) external {
-        require(dtokens[_token] != address(0), "address(0)");
-
-        convertAt[_token][msg.sender] = block.number;
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
-        _mint(_token, msg.sender, _amount);
-    }
-
-    function mint(address _token, address _minter, uint256 _amount) external {
-        require(msg.sender == controller, "!controller");
-        require(dtokens[_token] != address(0), "address(0)");
-        _mint(_token, _minter, _amount);
-    }
-
-    function _mint(address _token, address _minter, uint256 _amount) internal {
-        DToken(dtokens[_token]).mint(_minter, _amount);
-        EToken(etokens[_token]).mint(_minter, _amount);
-        emit Convert(_minter, _token, _amount);
-    }
-
-    function redeem(address _token, uint256 _amount) external {
-        require(!locks[_token], "locking");
-        require(dtokens[_token] != address(0), "address(0)");
-        require(convertAt[_token][msg.sender] < block.number, "!convertAt");
-
-        DToken(dtokens[_token]).burn(msg.sender, _amount);
-        EToken(etokens[_token]).burn(msg.sender, _amount);
-
-        uint256 _balance = IERC20(_token).balanceOf(address(this));
-        if (_balance < _amount) {
-            uint256 _withdraw = _amount.sub(_balance);
-            IController(controller).withdraw(_token, _withdraw);
-            _balance = IERC20(_token).balanceOf(address(this));
-            if (_balance < _amount) {
-                _amount = _balance;
-            }
+    function maxRedeemAmount(address _token) public view returns (uint256) {
+        uint256 _dbalance = IERC20(dtokens[_token]).balanceOf(msg.sender);
+        uint256 _ebalance = IERC20(etokens[_token]).balanceOf(msg.sender);
+        if (_dbalance > _ebalance) {
+            return _ebalance;
+        } else {
+            return _dbalance;
         }
-
-        uint256 _fee = _amount.mul(withdrawalFee).div(withdrawalMax);
-        IERC20(_token).safeTransfer(reward, _fee);
-        IERC20(_token).safeTransfer(msg.sender, _amount.sub(_fee));
-        emit Redeem(msg.sender, _token, _amount, _fee);
     }
 
     function tokenBalance(address _token) public view returns (uint256) {
         return IERC20(_token).balanceOf(address(this));
     }
 
-    function earn(address _token) public {
-        uint256 _bal = tokenBalance(_token);
-        IERC20(_token).safeTransfer(controller, _bal);
-        IController(controller).earn(_token, _bal);
+    function deposit(address _token) public {
+        uint256 _balance = tokenBalance(_token);
+        IERC20(_token).safeTransfer(controller, _balance);
+        IController(controller).deposit(_token, _balance);
     }
 
     function sweep(address _token) public {
         require(msg.sender == governance, "!governance");
         require(dtokens[_token] == address(0), "!address(0)");
 
-        uint256 _bal = tokenBalance(_token);
-        IERC20(_token).safeTransfer(reward, _bal);
+        uint256 _balance = tokenBalance(_token);
+        IERC20(_token).safeTransfer(reward, _balance);
     }
 }
