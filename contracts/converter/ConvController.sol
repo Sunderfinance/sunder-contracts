@@ -78,20 +78,23 @@ contract ConvController {
         require(dtokens[_token] != address(0), "address(0)");
 
         convertAt[_token][msg.sender] = block.number;
-        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20(_token).safeTransferFrom(msg.sender, controller, _amount);
         _mint(_token, msg.sender, _amount);
+        IController(controller).deposit(_token, _amount);
+        emit Convert(msg.sender, _token, _amount);
     }
 
     function mint(address _token, address _minter, uint256 _amount) public {
         require(msg.sender == controller, "!controller");
         require(dtokens[_token] != address(0), "address(0)");
+
         _mint(_token, _minter, _amount);
+        emit Convert(_minter, _token, _amount);
     }
 
     function _mint(address _token, address _minter, uint256 _amount) internal {
         DToken(dtokens[_token]).mint(_minter, _amount);
         EToken(etokens[_token]).mint(_minter, _amount);
-        emit Convert(_minter, _token, _amount);
     }
 
     function redeemAll(address _token) external {
@@ -125,7 +128,6 @@ contract ConvController {
 
     function createPair(address _token) external  returns (address _dtoken, address _etoken) {
         require(msg.sender == governance, "!governance");
-        require(_token != address(0), " address(0)");
         require(dtokens[_token] == address(0), "!address(0)");
 
         bytes memory _nameD = abi.encodePacked("dToken ", ERC20(_token).name());
@@ -169,16 +171,16 @@ contract ConvController {
     }
 
     function deposit(address _token) public {
-        uint256 _bal = tokenBalance(_token);
-        IERC20(_token).safeTransfer(controller, _bal);
-        IController(controller).deposit(_token, _bal);
+        uint256 _balance = tokenBalance(_token);
+        IERC20(_token).safeTransfer(controller, _balance);
+        IController(controller).deposit(_token, _balance);
     }
 
     function sweep(address _token) public {
         require(msg.sender == governance, "!governance");
         require(dtokens[_token] == address(0), "!address(0)");
 
-        uint256 _bal = tokenBalance(_token);
-        IERC20(_token).safeTransfer(reward, _bal);
+        uint256 _balance = tokenBalance(_token);
+        IERC20(_token).safeTransfer(reward, _balance);
     }
 }

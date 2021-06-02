@@ -104,24 +104,25 @@ contract VoteController {
         uint8 _type = types[_comp];
         require(_type > 0, "!type");
 
+        uint256 _totalAmount;
         if (_type >= 4) {
             address _vote = againsts[_comp];
-            IVote(_vote).returnToken(_comp);
+            _totalAmount = IVote(_vote).returnToken(_comp, controller);
             _type -= 4;
         }
         if (_type >= 2) {
             address _vote = fors[_comp];
-            IVote(_vote).returnToken(_comp);
+            uint256 _amount = IVote(_vote).returnToken(_comp, controller);
+            _totalAmount = _totalAmount.add(_amount);
             _type -= 2;
         }
         if (_type >= 1) {
             address _vote = abstains[_comp];
-            IVote(_vote).returnToken(_comp);
+            uint256 _amount = IVote(_vote).returnToken(_comp, controller);
+            _totalAmount = _totalAmount.add(_amount);
         }
 
-        uint256 _balance = IERC20(_comp).balanceOf(address(this));
-        IERC20(_comp).safeTransfer(controller, _balance);
-        IController(controller).depositVote(_comp, _balance);
+        IController(controller).depositVote(_comp, _totalAmount);
     }
 
     function castVote(address _comp, uint256 _proposalId) public {
@@ -195,17 +196,17 @@ contract VoteController {
         require(msg.sender == governance, "!governance");
 
         address _vote = againsts[_comp];
-        IVote(_vote).returnToken(_comp);
+        uint256 _totalAmount = IVote(_vote).returnToken(_comp, controller);
 
         _vote = fors[_comp];
-        IVote(_vote).returnToken(_comp);
+        uint256 _amount = IVote(_vote).returnToken(_comp, controller);
+        _totalAmount = _totalAmount.add(_amount);
 
         _vote = abstains[_comp];
-        IVote(_vote).returnToken(_comp);
+        _amount = IVote(_vote).returnToken(_comp, controller);
+        _totalAmount = _totalAmount.add(_amount);
 
-        uint256 _balance = IERC20(_comp).balanceOf(address(this));
-        IERC20(_comp).safeTransfer(controller, _balance);
-        IController(controller).depositVote(_comp, _balance);
+        IController(controller).depositVote(_comp, _totalAmount);
     }
 
     function voteByAdmin(address _comp, uint256 _proposalId) public {
