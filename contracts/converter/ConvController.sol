@@ -27,12 +27,11 @@ contract ConvController {
 
     mapping(address => address) public dtokens;
     mapping(address => address) public etokens;
+    mapping(address => mapping(address => uint256)) public convertAt;
 
-    mapping(address => mapping(address => uint256)) convertAt;
-
-    event PairCreated(address indexed token,address indexed dtoken,address indexed etoken);
-    event Convert(address indexed account,address indexed token, uint256 amount);
-    event Redeem(address indexed account,address indexed token, uint256 amount, uint256 fee);
+    event PairCreated(address indexed token, address indexed dtoken, address indexed etoken);
+    event Convert(address indexed account, address indexed token, uint256 amount);
+    event Redeem(address indexed account, address indexed token, uint256 amount, uint256 fee);
 
     constructor(address _controller, address _reward, address _operator) public {
         governance = msg.sender;
@@ -146,14 +145,14 @@ contract ConvController {
         emit Redeem(msg.sender, _token, _amount, _fee);
     }
 
-    function tokenBalance(address _token) public view returns (uint256) {
-        return IERC20(_token).balanceOf(address(this));
-    }
-
-    function earn(address _token) public {
+    function deposit(address _token) public {
         uint256 _bal = tokenBalance(_token);
         IERC20(_token).safeTransfer(controller, _bal);
-        IController(controller).earn(_token, _bal);
+        IController(controller).deposit(_token, _bal);
+    }
+
+    function tokenBalance(address _token) public view returns (uint256) {
+        return IERC20(_token).balanceOf(address(this));
     }
 
     function sweep(address _token) public {

@@ -40,9 +40,9 @@ contract Vote {
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
         uint256 _balance = IERC20(_comp).balanceOf(address(this));
         IERC20(_comp).safeTransfer(voteController, _balance);
-    }  
+    }
 
-    function vote(address _comp, uint256 _proposalId) public {
+    function castVote(address _comp, uint256 _proposalId) public {
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
         address governor = IVoteController(voteController).governors(_comp);
         require(governor != address(0), "!governor");

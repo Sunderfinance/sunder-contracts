@@ -17,7 +17,10 @@ contract SVault is ERC20 {
     address public governance;
     address public controller;
 
-    mapping(address => uint256) depositAt;
+    mapping(address => uint256) public depositAt;
+
+    event Deposit(address indexed account, uint256 amount, uint256 share);
+    event Withdraw(address indexed account, uint256 amount, uint256 share);
 
     constructor (address _eToken, address _controller) public ERC20(
         string(abi.encodePacked("sunder ", ERC20(_eToken).name())),
@@ -39,10 +42,6 @@ contract SVault is ERC20 {
         controller = _controller;
     }
 
-    function eTokenBalance() public view returns (uint256) {
-        return eToken.balanceOf(address(this));
-    }
-
     function depositAll() external {
         deposit(eToken.balanceOf(msg.sender));
     }
@@ -53,13 +52,14 @@ contract SVault is ERC20 {
         eToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 _after = eToken.balanceOf(address(this));
         _amount = _after.sub(_pool); // Additional check for deflationary eTokens
-        uint256 shares = 0;
+        uint256 _shares = 0;
         if (totalSupply() == 0) {
-            shares = _amount;
+            _shares = _amount;
         } else {
-            shares = (_amount.mul(totalSupply())).div(_pool);
+            _shares = (_amount.mul(totalSupply())).div(_pool);
         }
-        _mint(msg.sender, shares);
+        _mint(msg.sender, _shares);
+        emit Deposit(msg.sender, _amount, _shares);
     }
 
     function withdrawAll() external {
@@ -69,9 +69,14 @@ contract SVault is ERC20 {
     // No rebalance implementation for lower fees and faster swaps
     function withdraw(uint256 _shares) public {
         require(depositAt[msg.sender] < block.number, "!depositAt");
-        uint256 r = (eTokenBalance().mul(_shares)).div(totalSupply());
+        uint256 _amount = (eTokenBalance().mul(_shares)).div(totalSupply());
         _burn(msg.sender, _shares);
-        eToken.safeTransfer(msg.sender, r);
+        eToken.safeTransfer(msg.sender, _amount);
+        emit Withdraw(msg.sender, _amount, _shares);
+    }
+
+    function eTokenBalance() public view returns (uint256) {
+        return eToken.balanceOf(address(this));
     }
 
     function getPricePerFullShare() public view returns (uint256) {

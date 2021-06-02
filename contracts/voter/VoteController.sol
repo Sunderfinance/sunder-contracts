@@ -124,7 +124,7 @@ contract VoteController {
         IController(controller).depositVote(_comp, _balance);
     }
 
-    function vote(address _comp, uint256 _proposalId) public {
+    function castVote(address _comp, uint256 _proposalId) public {
         require(msg.sender == operator || msg.sender == governance, "!operator");
         require(proposalIds[_comp] == _proposalId, "!proposalId");
         uint8 _type = types[_comp];
@@ -135,17 +135,17 @@ contract VoteController {
 
         if (_type >= 4) {
             address _vote = againsts[_comp];
-            IVote(_vote).vote(_comp, _proposalId);
+            IVote(_vote).castVote(_comp, _proposalId);
             _type -= 4;
         }
         if (_type >= 2) {
             address _vote = fors[_comp];
-            IVote(_vote).vote(_comp, _proposalId);
+            IVote(_vote).castVote(_comp, _proposalId);
             _type -= 2;
         }
         if (_type >= 1) {
             address _vote = abstains[_comp];
-            IVote(_vote).vote(_comp, _proposalId);
+            IVote(_vote).castVote(_comp, _proposalId);
         }
     }
 
@@ -212,12 +212,12 @@ contract VoteController {
         require(msg.sender == governance, "!governance");
 
         address _vote = againsts[_comp];
-        IVote(_vote).vote(_comp, _proposalId);
+        IVote(_vote).castVote(_comp, _proposalId);
 
         _vote = fors[_comp];
-        IVote(_vote).vote(_comp, _proposalId);
+        IVote(_vote).castVote(_comp, _proposalId);
 
         _vote = abstains[_comp];
-        IVote(_vote).vote(_comp, _proposalId);
+        IVote(_vote).castVote(_comp, _proposalId);
     }
 }

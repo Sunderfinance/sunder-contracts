@@ -98,22 +98,15 @@ contract Controller {
         strategies[_token] = _strategy;
     }
 
-    function earn(address _token, uint256 _amount) public {
+    function deposit(address _token, uint256 _amount) public {
         require(msg.sender == convController, "!convController");
         _deposit(_token, _amount);
         address _strategy = strategies[_token];
         IStrategy(_strategy).addDebt(_amount);
     }
 
-    function deposit(address _token) public {
-        uint256 _balance = IERC20(_token).balanceOf(address(this));
-        _deposit(_token, _balance);
-    }
-
     function depositVote(address _token, uint256 _amount) public {
         require(msg.sender == voteController, "!voteController");
-        uint256 _balance = IERC20(_token).balanceOf(address(this));
-        require(_balance >= _amount, "!_balance >= _amount");
         _deposit(_token, _amount);
     }
 
@@ -129,14 +122,14 @@ contract Controller {
         IStrategy(strategies[_token]).withdraw(msg.sender, _amount);
     }
 
-    function withdrawAll(address _token) public {
-        require(msg.sender == strategist || msg.sender == governance, "!strategist");
-        IStrategy(strategies[_token]).withdrawAll(convController);
-    }
-
     function withdrawVote(address _token, uint256 _amount) public {
         require(msg.sender == voteController, "!voteController");
         IStrategy(strategies[_token]).withdrawVote(msg.sender, _amount);
+    }
+
+    function withdrawAll(address _token) public {
+        require(msg.sender == strategist || msg.sender == governance, "!strategist");
+        IStrategy(strategies[_token]).withdrawAll(convController);
     }
 
     function inCaseTokensGetStuck(address _token, uint256 _amount) public {
