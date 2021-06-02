@@ -71,12 +71,12 @@ contract VoteController {
         IController(controller).withdrawVote(_comp, _amount);
 
         uint8 _type = 0;
-        if (_against > 0 ) {
+        if (_against > 0) {
             address _vote = againsts[_comp];
             _tranferVote(_comp, _vote, _against);
             _type += 4;
         }
-        if (_for > 0 ) {
+        if (_for > 0) {
             address _vote = fors[_comp];
             _tranferVote(_comp, _vote, _for);
             _type += 2;
@@ -104,17 +104,17 @@ contract VoteController {
         uint8 _type = types[_comp];
         require(_type > 0, "!type");
 
-        if (_type >= 4 ) {
+        if (_type >= 4) {
             address _vote = againsts[_comp];
             IVote(_vote).returnToken(_comp);
             _type -= 4;
         }
-        if (_type >= 2 ) {
+        if (_type >= 2) {
             address _vote = fors[_comp];
             IVote(_vote).returnToken(_comp);
             _type -= 2;
         }
-        if (_type >= 1 ) {
+        if (_type >= 1) {
             address _vote = abstains[_comp];
             IVote(_vote).returnToken(_comp);
         }
@@ -133,29 +133,28 @@ contract VoteController {
         proposalIds[_comp] = 0;
         types[_comp] = 0;
 
-        if (_type >= 4 ) {
+        if (_type >= 4) {
             address _vote = againsts[_comp];
             IVote(_vote).vote(_comp, _proposalId);
             _type -= 4;
         }
-        if (_type >= 2 ) {
+        if (_type >= 2) {
             address _vote = fors[_comp];
             IVote(_vote).vote(_comp, _proposalId);
             _type -= 2;
         }
-        if (_type >= 1 ) {
+        if (_type >= 1) {
             address _vote = abstains[_comp];
             IVote(_vote).vote(_comp, _proposalId);
         }
     }
 
-    function assets(address _token) public view returns (uint256) {
-        return IController(controller).assets(_token);
+    function totalAssets(address _token) public view returns (uint256) {
+        return IController(controller).totalAssets(_token);
     }
 
     function sweep(address _token) public {
         require(msg.sender == governance, "!governance");
-        require(fors[_token] == address(0), "!address(0)");
 
         uint256 _bal = IERC20(_token).balanceOf(address(this));
         address _rewards = IController(controller).rewards();
@@ -178,11 +177,11 @@ contract VoteController {
         uint256 _amount = _for.add(_against).add(_abstain);
         IController(controller).withdrawVote(_comp, _amount);
 
-        if (_against > 0 ) {
+        if (_against > 0) {
             address _vote = againsts[_comp];
             _tranferVote(_comp, _vote, _against);
         }
-        if (_for > 0 ) {
+        if (_for > 0) {
             address _vote = fors[_comp];
             _tranferVote(_comp, _vote, _for);
         }

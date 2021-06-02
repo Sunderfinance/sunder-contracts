@@ -150,13 +150,12 @@ contract StrategyCompound {
         }
     }
 
-    // Controller only function for creating additional rewards from dust
-    function withdraw(IERC20 _asset) external returns (uint256 _balance) {
+    function withdraw(address _asset) external returns (uint256 _balance) {
         require(msg.sender == controller, "!controller");
         require(want != address(_asset), "want");
         require(cComp != address(_asset), "cComp");
-        _balance = _asset.balanceOf(address(this));
-        _asset.safeTransfer(controller, _balance);
+        _balance = IERC20(_asset).balanceOf(address(this));
+        IERC20(_asset).safeTransfer(controller, _balance);
     }
 
     function setClaim(bool _claim) public {
@@ -173,7 +172,7 @@ contract StrategyCompound {
             cTokens[0] = cComp;
             compController.claimComp(holders, cTokens, false, true);
         }
-        uint256 _assets = assets();
+        uint256 _assets = totalAssets();
         if (_assets > debt){
             uint256 _amount = _assets - debt;
             IController(controller).mint(address(want), _amount);
@@ -202,7 +201,7 @@ contract StrategyCompound {
         return IERC20(cComp).balanceOf(address(this));
     }
 
-    function assets() public view returns (uint256) {
+    function totalAssets() public view returns (uint256) {
         return balanceOfWant().add(balanceCInToken());
     }
 

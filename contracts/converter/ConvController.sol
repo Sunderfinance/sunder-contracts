@@ -28,6 +28,8 @@ contract ConvController {
     mapping(address => address) public dtokens;
     mapping(address => address) public etokens;
 
+    mapping(address => mapping(address => uint256)) convertAt;
+
     event PairCreated(address indexed token,address indexed dtoken,address indexed etoken);
     event Convert(address indexed account,address indexed token, uint256 amount);
     event Redeem(address indexed account,address indexed token, uint256 amount, uint256 fee);
@@ -103,6 +105,7 @@ contract ConvController {
     function convert(address _token, uint256 _amount) external {
         require(dtokens[_token] != address(0), "address(0)");
 
+        convertAt[_token][msg.sender] = block.number;
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
         _mint(_token, msg.sender, _amount);
     }
@@ -122,6 +125,7 @@ contract ConvController {
     function redeem(address _token, uint256 _amount) external {
         require(!locks[_token], "locking");
         require(dtokens[_token] != address(0), "address(0)");
+        require(convertAt[_token][msg.sender] < block.number, "!convertAt");
 
         DToken(dtokens[_token]).burn(msg.sender, _amount);
         EToken(etokens[_token]).burn(msg.sender, _amount);
@@ -142,12 +146,12 @@ contract ConvController {
         emit Redeem(msg.sender, _token, _amount, _fee);
     }
 
-    function available(address _token) public view returns (uint256) {
+    function tokenBalance(address _token) public view returns (uint256) {
         return IERC20(_token).balanceOf(address(this));
     }
 
     function earn(address _token) public {
-        uint256 _bal = available(_token);
+        uint256 _bal = tokenBalance(_token);
         IERC20(_token).safeTransfer(controller, _bal);
         IController(controller).earn(_token, _bal);
     }
@@ -156,7 +160,7 @@ contract ConvController {
         require(msg.sender == governance, "!governance");
         require(dtokens[_token] == address(0), "!address(0)");
 
-        uint256 _bal = available(_token);
+        uint256 _bal = tokenBalance(_token);
         IERC20(_token).safeTransfer(reward, _bal);
     }
 }

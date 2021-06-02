@@ -9,15 +9,17 @@ import "../../interfaces/voter/IVoteController.sol";
 import "../../interfaces/compound/IComp.sol";
 import "../../interfaces/compound/IGovernorDelegate.sol";
 
-contract AgainstVote {
+contract Vote {
     using SafeERC20 for IERC20;
 
     address public governance;
     address public voteController;
+    uint8   public support;
 
-    constructor(address _voteController) public {
+    constructor(address _voteController, uint8 _support) public {
         governance = msg.sender;
         voteController = _voteController;
+        support = _support;
     }
 
     function setGovernance(address _governance) public {
@@ -30,21 +32,21 @@ contract AgainstVote {
         voteController = _voteController;
     }
 
+    function delegate(address _comp) public {
+        IComp(_comp).delegate(address(this));
+    }
+
     function returnToken(address _comp) public {
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
         uint256 _balance = IERC20(_comp).balanceOf(address(this));
         IERC20(_comp).safeTransfer(voteController, _balance);
-    }
-
-    function delegate(address _comp) public {
-        IComp(_comp).delegate(address(this));
-    }
+    }  
 
     function vote(address _comp, uint256 _proposalId) public {
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
         address governor = IVoteController(voteController).governors(_comp);
         require(governor != address(0), "!governor");
-        IGovernorDelegate(governor).castVote(_proposalId, 0);
+        IGovernorDelegate(governor).castVote(_proposalId, support);
     }
 
     function proposals(address _comp, uint256 _proposalId) external view returns (uint256 _id, address _proposer,

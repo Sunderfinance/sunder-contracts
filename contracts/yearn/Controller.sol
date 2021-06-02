@@ -124,13 +124,19 @@ contract Controller {
         IERC20(_token).safeTransfer(_strategy, _amount);
     }
 
-    function assets(address _token) external view returns (uint256) {
-        return IStrategy(strategies[_token]).assets();
+    function withdraw(address _token, uint256 _amount) public {
+        require(msg.sender == convController, "!convController");
+        IStrategy(strategies[_token]).withdraw(msg.sender, _amount);
     }
 
     function withdrawAll(address _token) public {
         require(msg.sender == strategist || msg.sender == governance, "!strategist");
         IStrategy(strategies[_token]).withdrawAll(convController);
+    }
+
+    function withdrawVote(address _token, uint256 _amount) public {
+        require(msg.sender == voteController, "!voteController");
+        IStrategy(strategies[_token]).withdrawVote(msg.sender, _amount);
     }
 
     function inCaseTokensGetStuck(address _token, uint256 _amount) public {
@@ -176,18 +182,12 @@ contract Controller {
         }
     }
 
-    function withdraw(address _token, uint256 _amount) public {
-        require(msg.sender == convController, "!convController");
-        IStrategy(strategies[_token]).withdraw(msg.sender, _amount);
-    }
-
-    function withdrawVote(address _token, uint256 _amount) public {
-        require(msg.sender == voteController, "!voteController");
-        IStrategy(strategies[_token]).withdrawVote(msg.sender, _amount);
-    }
-
     function mint(address _token, uint256 _amount) public {
         require(msg.sender == strategies[_token], "!token strategies");
         IConvController(convController).mint(_token, msg.sender, _amount);
+    }
+
+    function totalAssets(address _token) external view returns (uint256) {
+        return IStrategy(strategies[_token]).totalAssets();
     }
 }

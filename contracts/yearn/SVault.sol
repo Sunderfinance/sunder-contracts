@@ -13,18 +13,20 @@ contract SVault is ERC20 {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    IERC20 public etoken;
+    IERC20  public eToken;
     address public governance;
     address public controller;
 
-    constructor (address _etoken, address _controller) public ERC20(
-        string(abi.encodePacked("sunder ", ERC20(_etoken).name())),
-        string(abi.encodePacked("s", ERC20(_etoken).symbol())))
+    mapping(address => uint256) depositAt;
+
+    constructor (address _eToken, address _controller) public ERC20(
+        string(abi.encodePacked("sunder ", ERC20(_eToken).name())),
+        string(abi.encodePacked("s", ERC20(_eToken).symbol())))
     {
-        etoken = IERC20(_etoken);
+        eToken = IERC20(_eToken);
         governance = msg.sender;
         controller = _controller;
-        _setupDecimals(ERC20(_etoken).decimals());
+        _setupDecimals(ERC20(_eToken).decimals());
     }
 
     function setGovernance(address _governance) public {
@@ -37,19 +39,20 @@ contract SVault is ERC20 {
         controller = _controller;
     }
 
-    function etokenBalance() public view returns (uint256) {
-        return etoken.balanceOf(address(this));
+    function eTokenBalance() public view returns (uint256) {
+        return eToken.balanceOf(address(this));
     }
 
     function depositAll() external {
-        deposit(etoken.balanceOf(msg.sender));
+        deposit(eToken.balanceOf(msg.sender));
     }
 
     function deposit(uint256 _amount) public {
-        uint256 _pool = etokenBalance();
-        etoken.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 _after = etoken.balanceOf(address(this));
-        _amount = _after.sub(_pool); // Additional check for deflationary etokens
+        depositAt[msg.sender] = block.number;
+        uint256 _pool = eTokenBalance();
+        eToken.safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 _after = eToken.balanceOf(address(this));
+        _amount = _after.sub(_pool); // Additional check for deflationary eTokens
         uint256 shares = 0;
         if (totalSupply() == 0) {
             shares = _amount;
@@ -65,18 +68,19 @@ contract SVault is ERC20 {
 
     // No rebalance implementation for lower fees and faster swaps
     function withdraw(uint256 _shares) public {
-        uint256 r = (etokenBalance().mul(_shares)).div(totalSupply());
+        require(depositAt[msg.sender] < block.number, "!depositAt");
+        uint256 r = (eTokenBalance().mul(_shares)).div(totalSupply());
         _burn(msg.sender, _shares);
-        etoken.safeTransfer(msg.sender, r);
+        eToken.safeTransfer(msg.sender, r);
     }
 
     function getPricePerFullShare() public view returns (uint256) {
-        return etokenBalance().mul(1e18).div(totalSupply());
+        return eTokenBalance().mul(1e18).div(totalSupply());
     }
 
     function sweep(address _token) public {
         require(msg.sender == governance, "!governance");
-        require(address(etoken) != _token, "!address(0)");
+        require(address(eToken) != _token, "eToken = _token");
 
         uint256 _bal = IERC20(_token).balanceOf(address(this));
         address _rewards = IController(controller).rewards();
