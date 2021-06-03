@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelinV3/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelinV3/contracts/token/ERC20/SafeERC20.sol";
@@ -20,6 +21,7 @@ contract VoteController {
     mapping (address => address) public againsts;
     mapping (address => address) public fors;
     mapping (address => address) public abstains;
+    mapping (address => address) public proposes;
     mapping (address => address) public governors;
     mapping (address => uint256) public proposalIds;
     mapping (address => uint8) public types;
@@ -60,6 +62,10 @@ contract VoteController {
     function setAbstain(address _comp, address _abstain) public {
         require(msg.sender == governance, "!governance");
         abstains[_comp] = _abstain;
+    }
+    function setPropose(address _comp, address _propose) public {
+        require(msg.sender == governance, "!governance");
+        proposes[_comp] = _propose;
     }
 
     function prepareVote(address _comp, uint256 _proposalId, uint256 _against, uint256 _for, uint256 _abstain) public {
@@ -170,6 +176,30 @@ contract VoteController {
     function setType(address _comp, uint8 _type) public {
         require(msg.sender == governance, "!governance");
         types[_comp] = _type;
+    }
+
+    function prepareProposeByAdmin(address _comp) public{
+        require(msg.sender == governance, "!governance");
+
+        address _vote = proposes[_comp];
+        uint256 _amount = IVote(_vote).proposalThreshold(_comp);
+        IController(controller).withdrawVote(_comp, _amount);
+        _tranferVote(_comp, _vote, _amount);
+    }
+
+    function proposeByAdmin(address _comp, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public {
+        require(msg.sender == governance, "!operator");
+
+        address _vote = proposes[_comp];
+        IVote(_vote).propose(_comp, targets, values, signatures, calldatas, description);
+    }
+
+    function returnProposeByAdmin(address _comp) public {
+        require(msg.sender == governance, "!operator");
+
+        address _vote = proposes[_comp];
+        uint256 _amount = IVote(_vote).returnToken(_comp, controller);
+        IController(controller).depositVote(_comp, _amount);
     }
 
     function prepareVoteByAdmin(address _comp, uint256 _proposalId, uint256 _against, uint256 _for, uint256 _abstain) public {

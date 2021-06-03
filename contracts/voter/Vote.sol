@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelinV3/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelinV3/contracts/token/ERC20/SafeERC20.sol";
@@ -49,7 +50,26 @@ contract Vote {
         IGovernorDelegate(governor).castVote(_proposalId, support);
     }
 
-    function proposals(address _comp, uint256 _proposalId) external view returns (uint256 _id, address _proposer,
+    function propose(address _comp, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256){
+        require(msg.sender == voteController || msg.sender == governance, "!voteController");
+        address governor = IVoteController(voteController).governors(_comp);
+        require(governor != address(0), "!governor");
+        return IGovernorDelegate(governor).propose(targets, values, signatures, calldatas, description);
+    }
+
+    function proposalThreshold(address _comp) public view returns (uint256){
+        address governor = IVoteController(voteController).governors(_comp);
+        require(governor != address(0), "!governor");
+        return IGovernorDelegate(governor).proposalThreshold();
+    }
+
+    function state(address _comp, uint256 _proposalId) public view returns (uint8){
+        address governor = IVoteController(voteController).governors(_comp);
+        require(governor != address(0), "!governor");
+        return IGovernorDelegate(governor).state(_proposalId);
+    }
+
+    function proposals(address _comp, uint256 _proposalId) public view returns (uint256 _id, address _proposer,
         uint256 _eta, uint256 _startBlock, uint256 _endBlock, uint256 _forVotes, uint256 _againstVotes,
         uint256 _abstainVotes, bool _canceled, bool _executed){
         address governor = IVoteController(voteController).governors(_comp);
@@ -57,9 +77,5 @@ contract Vote {
         return IGovernorDelegate(governor).proposals(_proposalId);
     }
 
-    function state(address _comp, uint256 _proposalId) external view returns (uint8){
-        address governor = IVoteController(voteController).governors(_comp);
-        require(governor != address(0), "!governor");
-        return IGovernorDelegate(governor).state(_proposalId);
-    }
+
 }
