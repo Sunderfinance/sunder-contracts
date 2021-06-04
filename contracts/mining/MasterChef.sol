@@ -59,11 +59,11 @@ contract MasterChef {
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
     IMigratorChef public migrator;
     // Info of each pool.
-    PoolInfo[] public poolInfo;
+    PoolInfo[] public poolInfos;
     // Info of each user that stakes LP tokens.
-    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
+    mapping(uint256 => mapping(address => UserInfo)) public userInfos;
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint = 0;
+    uint256 public totalAllocPoint;
     // The block number when SUSHI mining starts.
     uint256 public startBlock;
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -90,24 +90,29 @@ contract MasterChef {
         sushiPerBlock = _sushiPerBlock;
     }
 
+    function dev(address _devaddr) public {
+        require(msg.sender == devaddr || msg.sender == governance, "!devaddr");
+        devaddr = _devaddr;
+    }
+
     function poolLength() external view returns (uint256) {
-        return poolInfo.length;
+        return poolInfos.length;
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(uint256 _allocPoint, IERC20 _lpToken, bool _withUpdate) public {
+    function add(IERC20 _lpToken, uint256 _allocPoint, bool _withUpdate) public {
         require(msg.sender == governance, "!governance");
         if (_withUpdate) {
             massUpdatePools();
         }
-        uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
+        uint256 _lastRewardBlock = block.number > startBlock ? block.number : startBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
-        poolInfo.push(
+        poolInfos.push(
             PoolInfo({
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
-                lastRewardBlock: lastRewardBlock,
+                lastRewardBlock: _lastRewardBlock,
                 accSushiPerShare: 0
             })
         );
@@ -119,8 +124,8 @@ contract MasterChef {
         if (_withUpdate) {
             massUpdatePools();
         }
-        totalAllocPoint = totalAllocPoint.sub(poolInfo[_pid].allocPoint).add(_allocPoint);
-        poolInfo[_pid].allocPoint = _allocPoint;
+        totalAllocPoint = totalAllocPoint.sub(poolInfos[_pid].allocPoint).add(_allocPoint);
+        poolInfos[_pid].allocPoint = _allocPoint;
     }
 
     // Set the migrator contract. Can only be called by the owner.
@@ -132,12 +137,12 @@ contract MasterChef {
     // Migrate lp token to another lp contract. Can be called by anyone. We trust that migrator contract is good.
     function migrate(uint256 _pid) public {
         require(address(migrator) != address(0), "migrate: no migrator");
-        PoolInfo storage pool = poolInfo[_pid];
+        PoolInfo storage pool = poolInfos[_pid];
         IERC20 lpToken = pool.lpToken;
-        uint256 bal = lpToken.balanceOf(address(this));
-        lpToken.safeApprove(address(migrator), bal);
+        uint256 _balance = lpToken.balanceOf(address(this));
+        lpToken.safeApprove(address(migrator), _balance);
         IERC20 newLpToken = IERC20(migrator.migrate(address(lpToken)));
-        require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
+        require(_balance == newLpToken.balanceOf(address(this)), "migrate: bad");
         pool.lpToken = newLpToken;
     }
 
@@ -154,8 +159,8 @@ contract MasterChef {
 
     // View function to see pending SUSHIs on frontend.
     function pendingSushi(uint256 _pid, address _user) external view returns (uint256) {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][_user];
+        PoolInfo storage pool = poolInfos[_pid];
+        UserInfo storage user = userInfos[_pid][_user];
         uint256 accSushiPerShare = pool.accSushiPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
@@ -168,7 +173,7 @@ contract MasterChef {
 
     // Update reward vairables for all pools. Be careful of gas spending!
     function massUpdatePools() public {
-        uint256 length = poolInfo.length;
+        uint256 length = poolInfos.length;
         for (uint256 pid = 0; pid < length; ++pid) {
             updatePool(pid);
         }
@@ -176,7 +181,7 @@ contract MasterChef {
 
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
-        PoolInfo storage pool = poolInfo[_pid];
+        PoolInfo storage pool = poolInfos[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
         }
@@ -195,8 +200,8 @@ contract MasterChef {
 
     // Deposit LP tokens to MasterChef for SUSHI allocation.
     function deposit(uint256 _pid, uint256 _amount) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        PoolInfo storage pool = poolInfos[_pid];
+        UserInfo storage user = userInfos[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
             uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
@@ -208,10 +213,9 @@ contract MasterChef {
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-
     function withdraw(uint256 _pid, uint256 _amount) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        PoolInfo storage pool = poolInfos[_pid];
+        UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
         uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
@@ -220,12 +224,11 @@ contract MasterChef {
         user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
-        emit Harvest(msg.sender, _pid, _reward);
     }
 
     function harvest(uint256 _pid) public{
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        PoolInfo storage pool = poolInfos[_pid];
+        UserInfo storage user = userInfos[_pid][msg.sender];
         updatePool(_pid);
         uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
         _reward = _reward.add(user.reward);
@@ -236,16 +239,14 @@ contract MasterChef {
     }
 
     function withdrawAndHarvest(uint256 _pid, uint256 _amount) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        PoolInfo storage pool = poolInfos[_pid];
+        UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
         uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
-        //safeSushiTransfer(msg.sender, pending);
         _reward = _reward.add(user.reward);
         user.reward = 0;
         safeSushiTransfer(msg.sender, _reward);
-
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
@@ -253,12 +254,10 @@ contract MasterChef {
         emit Harvest(msg.sender, _pid, _reward);
     }
 
-
-
     // Withdraw without caring about rewards. EMERGENCY ONLY.
     function emergencyWithdraw(uint256 _pid) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
+        PoolInfo storage pool = poolInfos[_pid];
+        UserInfo storage user = userInfos[_pid][msg.sender];
         pool.lpToken.safeTransfer(address(msg.sender), user.amount);
         emit EmergencyWithdraw(msg.sender, _pid, user.amount);
         user.amount = 0;
@@ -267,17 +266,11 @@ contract MasterChef {
 
     // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
     function safeSushiTransfer(address _to, uint256 _amount) internal {
-        uint256 sushiBal = sushi.balanceOf(address(this));
-        if (_amount > sushiBal) {
-            sushi.transfer(_to, sushiBal);
+        uint256 _balance = sushi.balanceOf(address(this));
+        if (_amount > _balance) {
+            sushi.transfer(_to, _balance);
         } else {
             sushi.transfer(_to, _amount);
         }
-    }
-
-    // Update dev address by the previous dev.
-    function dev(address _devaddr) public {
-        require(msg.sender == devaddr, "dev: wut?");
-        devaddr = _devaddr;
     }
 }
