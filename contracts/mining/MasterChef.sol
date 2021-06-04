@@ -24,7 +24,7 @@ contract MasterChef {
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
-
+        uint256 reward;
         //
         // We do some fancy math here. Basically, any point in time, the amount of SUSHIs
         // entitled to a user but is pending to be distributed is:
@@ -68,6 +68,7 @@ contract MasterChef {
     uint256 public startBlock;
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
+    event Harvest(address indexed user, uint256 indexed pid, uint256 reward);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid,  uint256 amount);
 
     constructor(ISushi _sushi, address _devaddr, uint256 _sushiPerBlock, uint256 _startBlock, uint256 _bonusEndBlock) public {
@@ -198,8 +199,8 @@ contract MasterChef {
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
-            safeSushiTransfer(msg.sender, pending);
+            uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+            user.reward = _reward.add(user.reward);
         }
         pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         user.amount = user.amount.add(_amount);
@@ -207,19 +208,52 @@ contract MasterChef {
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-    // Withdraw LP tokens from MasterChef.
+
     function withdraw(uint256 _pid, uint256 _amount) public {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
-        safeSushiTransfer(msg.sender, pending);
+        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        user.reward = _reward.add(user.reward);
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
+        emit Harvest(msg.sender, _pid, _reward);
     }
+
+    function harvest(uint256 _pid) public{
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][msg.sender];
+        updatePool(_pid);
+        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        _reward = _reward.add(user.reward);
+        user.reward = 0;
+        safeSushiTransfer(msg.sender, _reward);
+        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        emit Harvest(msg.sender, _pid, _reward);
+    }
+
+    function withdrawAndHarvest(uint256 _pid, uint256 _amount) public {
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][msg.sender];
+        require(user.amount >= _amount, "withdraw: not good");
+        updatePool(_pid);
+        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        //safeSushiTransfer(msg.sender, pending);
+        _reward = _reward.add(user.reward);
+        user.reward = 0;
+        safeSushiTransfer(msg.sender, _reward);
+
+        user.amount = user.amount.sub(_amount);
+        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        emit Withdraw(msg.sender, _pid, _amount);
+        emit Harvest(msg.sender, _pid, _reward);
+    }
+
+
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
     function emergencyWithdraw(uint256 _pid) public {
