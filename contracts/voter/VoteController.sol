@@ -160,6 +160,17 @@ contract VoteController {
         return IController(controller).totalAssets(_token);
     }
 
+    function state(address _comp, uint256 _proposalId) public view returns (uint8){
+        address _vote = fors[_comp];
+        return IVote(_vote).state(_comp, _proposalId);
+    }
+
+    function proposals(address _comp, uint256 _proposalId) public view returns (uint256 _id, address _proposer,
+        uint256 _eta, uint256 _startBlock, uint256 _endBlock, uint256 _forVotes, uint256 _againstVotes, uint256 _abstainVotes, bool _canceled, bool _executed){
+        address _vote = fors[_comp];
+        return IVote(_vote).proposals(_comp, _proposalId);
+    }
+
     function sweep(address _token) public {
         require(msg.sender == governance, "!governance");
 
