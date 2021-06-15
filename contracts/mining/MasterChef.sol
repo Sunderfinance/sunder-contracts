@@ -7,8 +7,7 @@ import "@openzeppelinV3/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelinV3/contracts/math/SafeMath.sol";
 import "@openzeppelinV3/contracts/utils/EnumerableSet.sol";
 
-import "../../interfaces/sushi/ISushi.sol";
-import "../../interfaces/sushi/IMigratorChef.sol";
+import "../../interfaces/sunder/IMigratorChef.sol";
 
 
 contract MasterChef {
@@ -23,10 +22,10 @@ contract MasterChef {
         // We do some fancy math here. Basically, any point in time, the amount of SUSHIs
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * pool.accSushiPerShare) - user.rewardDebt
+        //   pending reward = (user.amount * pool.accSunderPerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accSushiPerShare` (and `lastRewardBlock`) gets updated.
+        //   1. The pool's `accSunderPerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
@@ -36,11 +35,11 @@ contract MasterChef {
         IERC20 lpToken; // Address of LP token contract.
         uint256 allocPoint; // How many allocation points assigned to this pool. SUSHIs to distribute per block.
         uint256 lastRewardTime; // Last block number that SUSHIs distribution occurs.
-        uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e18. See below.
+        uint256 accSunderPerShare; // Accumulated SUSHIs per share, times 1e18. See below.
     }
 
     address public governance;
-    ISushi  public sushi;
+    IERC20  public sunder;
 
     uint256 public totalReward;
     uint256 public reward;
@@ -62,8 +61,8 @@ contract MasterChef {
     event Harvest(address indexed user, uint256 indexed pid, uint256 reward);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid,  uint256 amount);
 
-    constructor(ISushi _sushi) public {
-        sushi = _sushi;
+    constructor(address _sunder) public {
+        sunder = IERC20(_sunder);
         governance = msg.sender;
     }
 
@@ -72,18 +71,18 @@ contract MasterChef {
         governance = _governance;
     }
 
-    function setReward(uint256 _startTime, uint256 _endTime, uint256 _reward) public {
+    function setReward(uint256 _startTime, uint256 _endTime, uint256 _reward, bool _withUpdate) public {
         require(msg.sender == governance, "!governance");
         require(endTime < block.timestamp, "!endTime");
         require(block.timestamp <= _startTime, "!_startTime");
         require(_startTime < _endTime, "!_endTime");
+        if (_withUpdate) {
+            massUpdatePools();
+        }
 
-        massUpdatePools();
-
-        uint256 _before = sushi.balanceOf(address(this));
-        sushi.mint(address(this), _reward);
-        uint256 _after = sushi.balanceOf(address(this));
-        reward = _after.sub(_before);
+        uint256 _balance = sunder.balanceOf(address(this));
+        require(_balance >= _reward, "!_reward");
+        reward = _reward;
 
         totalReward = totalReward.add(reward);
         startTime = _startTime;
@@ -109,7 +108,7 @@ contract MasterChef {
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
                 lastRewardTime: _lastRewardTime,
-                accSushiPerShare: 0
+                accSunderPerShare: 0
             })
         );
     }
@@ -162,16 +161,16 @@ contract MasterChef {
     }
 
     // View function to see pending SUSHIs on frontend.
-    function pendingSushi(uint256 _pid, address _user) external view returns (uint256) {
+    function pendingSunder(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][_user];
-        uint256 accSushiPerShare = pool.accSushiPerShare;
+        uint256 accSunderPerShare = pool.accSunderPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.timestamp > startTime && pool.lastRewardTime < endTime && block.timestamp > pool.lastRewardTime && lpSupply != 0) {
-            uint256 sushiReward =  getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
-            accSushiPerShare = accSushiPerShare.add(sushiReward.mul(1e18).div(lpSupply));
+            uint256 sunderReward =  getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
+            accSunderPerShare = accSunderPerShare.add(sunderReward.mul(1e18).div(lpSupply));
         }
-        return user.amount.mul(accSushiPerShare).div(1e18).sub(user.rewardDebt);
+        return user.amount.mul(accSunderPerShare).div(1e18).sub(user.rewardDebt);
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
@@ -203,8 +202,8 @@ contract MasterChef {
             return;
         }
 
-        uint256 sushiReward = getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
-        pool.accSushiPerShare = pool.accSushiPerShare.add(sushiReward.mul(1e18).div(lpSupply));
+        uint256 sunderReward = getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
+        pool.accSunderPerShare = pool.accSunderPerShare.add(sunderReward.mul(1e18).div(lpSupply));
         pool.lastRewardTime = block.timestamp;
     }
 
@@ -214,12 +213,12 @@ contract MasterChef {
         UserInfo storage user = userInfos[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e18).sub(user.rewardDebt);
+            uint256 _reward = user.amount.mul(pool.accSunderPerShare).div(1e18).sub(user.rewardDebt);
             user.reward = _reward.add(user.reward);
         }
         pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         user.amount = user.amount.add(_amount);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accSunderPerShare).div(1e18);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -228,10 +227,10 @@ contract MasterChef {
         UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e18).sub(user.rewardDebt);
+        uint256 _reward = user.amount.mul(pool.accSunderPerShare).div(1e18).sub(user.rewardDebt);
         user.reward = _reward.add(user.reward);
         user.amount = user.amount.sub(_amount);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accSunderPerShare).div(1e18);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
@@ -240,11 +239,11 @@ contract MasterChef {
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
         updatePool(_pid);
-        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e18).sub(user.rewardDebt);
+        uint256 _reward = user.amount.mul(pool.accSunderPerShare).div(1e18).sub(user.rewardDebt);
         _reward = _reward.add(user.reward);
         user.reward = 0;
-        safeSushiTransfer(msg.sender, _reward);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e18);
+        safeSunderTransfer(msg.sender, _reward);
+        user.rewardDebt = user.amount.mul(pool.accSunderPerShare).div(1e18);
         emit Harvest(msg.sender, _pid, _reward);
     }
 
@@ -253,12 +252,12 @@ contract MasterChef {
         UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e18).sub(user.rewardDebt);
+        uint256 _reward = user.amount.mul(pool.accSunderPerShare).div(1e18).sub(user.rewardDebt);
         _reward = _reward.add(user.reward);
         user.reward = 0;
-        safeSushiTransfer(msg.sender, _reward);
+        safeSunderTransfer(msg.sender, _reward);
         user.amount = user.amount.sub(_amount);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e18);
+        user.rewardDebt = user.amount.mul(pool.accSunderPerShare).div(1e18);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
         emit Harvest(msg.sender, _pid, _reward);
@@ -274,13 +273,13 @@ contract MasterChef {
         user.rewardDebt = 0;
     }
 
-    // Safe sushi transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
-    function safeSushiTransfer(address _to, uint256 _amount) internal {
-        uint256 _balance = sushi.balanceOf(address(this));
+    // Safe sunder transfer function, just in case if rounding error causes pool to not have enough SUSHIs.
+    function safeSunderTransfer(address _to, uint256 _amount) internal {
+        uint256 _balance = sunder.balanceOf(address(this));
         if (_amount > _balance) {
-            sushi.transfer(_to, _balance);
+            sunder.safeTransfer(_to, _balance);
         } else {
-            sushi.transfer(_to, _amount);
+            sunder.safeTransfer(_to, _amount);
         }
     }
 }
