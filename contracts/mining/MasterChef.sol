@@ -36,7 +36,7 @@ contract MasterChef {
         IERC20 lpToken; // Address of LP token contract.
         uint256 allocPoint; // How many allocation points assigned to this pool. SUSHIs to distribute per block.
         uint256 lastRewardTime; // Last block number that SUSHIs distribution occurs.
-        uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
+        uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e18. See below.
     }
 
     address public governance;
@@ -142,47 +142,6 @@ contract MasterChef {
         pool.lpToken = newLpToken;
     }
 
-    // todo delete
-    function getRewardTime(uint256 _lastRewardTime) public view returns (uint256) {
-        if (block.timestamp <= startTime) {
-            return 0;
-        } else if (block.timestamp <= endTime) {
-            if (_lastRewardTime <= startTime) {
-                return block.timestamp.sub(startTime);
-            } else {
-                return block.timestamp.sub(_lastRewardTime);
-            }
-        } else {
-            if (_lastRewardTime < startTime) {
-                return endTime.sub(startTime);
-            } else  if (_lastRewardTime < endTime) {
-                return endTime.sub(_lastRewardTime);
-            } else {
-                return 0;
-            }
-        }
-    }
-    // todo delete
-    function getRewardTime2(uint256 _from, uint256 _to) public view returns (uint256) {
-        if (_to <= startTime) {
-            return 0;
-        } else if (_to <= endTime) {
-            if (_from <= startTime) {
-                return _to.sub(startTime);
-            } else {
-                return _to.sub(_from);
-            }
-        } else {
-            if (_from < startTime) {
-                return endTime.sub(startTime);
-            } else if (_from < endTime) {
-                return endTime.sub(_from);
-            } else {
-                return 0;
-            }
-        }
-    }
-
     function getReward(uint256 _from, uint256 _to) public view returns (uint256) {
         if (_to <= startTime || _from >= endTime) {
             return 0;
@@ -210,9 +169,9 @@ contract MasterChef {
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.timestamp > startTime && pool.lastRewardTime < endTime && block.timestamp > pool.lastRewardTime && lpSupply != 0) {
             uint256 sushiReward =  getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
-            accSushiPerShare = accSushiPerShare.add(sushiReward.mul(1e12).div(lpSupply));
+            accSushiPerShare = accSushiPerShare.add(sushiReward.mul(1e18).div(lpSupply));
         }
-        return user.amount.mul(accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accSushiPerShare).div(1e18).sub(user.rewardDebt);
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
@@ -245,7 +204,7 @@ contract MasterChef {
         }
 
         uint256 sushiReward = getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
-        pool.accSushiPerShare = pool.accSushiPerShare.add(sushiReward.mul(1e12).div(lpSupply));
+        pool.accSushiPerShare = pool.accSushiPerShare.add(sushiReward.mul(1e18).div(lpSupply));
         pool.lastRewardTime = block.timestamp;
     }
 
@@ -255,12 +214,12 @@ contract MasterChef {
         UserInfo storage user = userInfos[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+            uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e18).sub(user.rewardDebt);
             user.reward = _reward.add(user.reward);
         }
         pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         user.amount = user.amount.add(_amount);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e18);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -269,10 +228,10 @@ contract MasterChef {
         UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e18).sub(user.rewardDebt);
         user.reward = _reward.add(user.reward);
         user.amount = user.amount.sub(_amount);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e18);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
@@ -281,11 +240,11 @@ contract MasterChef {
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
         updatePool(_pid);
-        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e18).sub(user.rewardDebt);
         _reward = _reward.add(user.reward);
         user.reward = 0;
         safeSushiTransfer(msg.sender, _reward);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e18);
         emit Harvest(msg.sender, _pid, _reward);
     }
 
@@ -294,12 +253,12 @@ contract MasterChef {
         UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 _reward = user.amount.mul(pool.accSushiPerShare).div(1e18).sub(user.rewardDebt);
         _reward = _reward.add(user.reward);
         user.reward = 0;
         safeSushiTransfer(msg.sender, _reward);
         user.amount = user.amount.sub(_amount);
-        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accSushiPerShare).div(1e18);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
         emit Harvest(msg.sender, _pid, _reward);
