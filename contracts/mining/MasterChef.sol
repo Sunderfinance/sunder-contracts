@@ -206,8 +206,8 @@ contract MasterChef {
             user.reward = _reward.add(user.reward);
         }
         pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-        user.amount = user.amount.add(_amount);
         user.depositTime = block.timestamp;
+        user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         pool.amount = pool.amount.add(_amount);
         emit Deposit(msg.sender, _pid, _amount);
@@ -223,8 +223,8 @@ contract MasterChef {
         uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
         user.reward = _reward.add(user.reward);
         user.amount = user.amount.sub(_amount);
-        pool.amount = pool.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
+        pool.amount = pool.amount.sub(_amount);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
@@ -254,8 +254,8 @@ contract MasterChef {
         user.reward = 0;
         safeTokenTransfer(msg.sender, _reward);
         user.amount = user.amount.sub(_amount);
-        pool.amount = pool.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
+        pool.amount = pool.amount.sub(_amount);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
         emit Harvest(msg.sender, _pid, _reward);
