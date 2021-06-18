@@ -266,7 +266,7 @@ contract MasterChef {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
-        require(block.timestamp >= user.depositTime + intervalTime, "!intervalTime");
+        require(block.timestamp >= user.depositTime + 1, "!intervalTime"); // prevent flash loan
         uint256 _amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
