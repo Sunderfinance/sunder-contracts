@@ -12,12 +12,13 @@ contract MasterChef {
     // Info of each user.
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
-        uint256 rewardDebt; // Reward debt. See explanation below.
+        uint256 rewardDebt; // Reward debt.
         uint256 reward;
     }
     // Info of each pool.
     struct PoolInfo {
         IERC20  lpToken; // Address of LP token contract.
+        uint256 amount;  // How many LP tokens.
         uint256 allocPoint; // How many allocation points assigned to this pool. Token to distribute per block.
         uint256 lastRewardTime; // Last block number that Token distribution occurs.
         uint256 accTokenPerShare; // Accumulated Token per share, times 1e18. See below.
@@ -33,12 +34,13 @@ contract MasterChef {
     uint256 public endTime;
     uint256 public period;
 
+    // Total allocation poitns. Must be the sum of all allocation points in all pools.
+    uint256 public totalAllocPoint;
+
     // Info of each pool.
     PoolInfo[] public poolInfos;
     // Info of each user that stakes LP tokens.
     mapping(uint256 => mapping(address => UserInfo)) public userInfos;
-    // Total allocation poitns. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -94,6 +96,7 @@ contract MasterChef {
         poolInfos.push(
             PoolInfo({
                 lpToken: _lpToken,
+                amount: 0,
                 allocPoint: _allocPoint,
                 lastRewardTime: _lastRewardTime,
                 accTokenPerShare: 0
@@ -187,6 +190,7 @@ contract MasterChef {
         }
         pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
         user.amount = user.amount.add(_amount);
+        pool.amount = pool.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         emit Deposit(msg.sender, _pid, _amount);
     }
@@ -199,6 +203,7 @@ contract MasterChef {
         uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
         user.reward = _reward.add(user.reward);
         user.amount = user.amount.sub(_amount);
+        pool.amount = pool.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
@@ -226,6 +231,7 @@ contract MasterChef {
         user.reward = 0;
         safeTokenTransfer(msg.sender, _reward);
         user.amount = user.amount.sub(_amount);
+        pool.amount = pool.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         pool.lpToken.safeTransfer(address(msg.sender), _amount);
         emit Withdraw(msg.sender, _pid, _amount);
@@ -236,10 +242,12 @@ contract MasterChef {
     function emergencyWithdraw(uint256 _pid) public {
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
+        uint256 _amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
-        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+        pool.amount = pool.amount.sub(_amount);
+        pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
 
     // Safe rewardToken transfer function, just in case if rounding error causes pool to not have enough Token.
