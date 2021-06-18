@@ -29,6 +29,7 @@ contract MasterChef {
 
     IERC20  public rewardToken;
     uint256 public totalReward;
+    uint256 public epochId;
     uint256 public reward;
     uint256 public startTime;
     uint256 public endTime;
@@ -80,6 +81,7 @@ contract MasterChef {
         startTime = _startTime;
         endTime = _endTime;
         period = _endTime.sub(_startTime);
+        epochId++;
     }
 
     function poolLength() external view returns (uint256) {
@@ -88,6 +90,10 @@ contract MasterChef {
 
     function add(IERC20 _lpToken, uint256 _allocPoint, bool _withUpdate) public {
         require(msg.sender == governance, "!governance");
+        uint256 length = poolInfos.length;
+        for (uint256 i = 0; i < length; i++) {
+            require(address(_lpToken) != address(poolInfos[i].lpToken), "!_lpToken");
+        }
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -111,6 +117,7 @@ contract MasterChef {
             massUpdatePools();
         }
         totalAllocPoint = totalAllocPoint.sub(poolInfos[_pid].allocPoint).add(_allocPoint);
+        require(totalAllocPoint > 0, "!totalAllocPoint");
         poolInfos[_pid].allocPoint = _allocPoint;
     }
 
@@ -156,6 +163,7 @@ contract MasterChef {
 
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
+        require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         if (block.timestamp <= pool.lastRewardTime) {
             return;
@@ -181,6 +189,7 @@ contract MasterChef {
     }
 
     function deposit(uint256 _pid, uint256 _amount) public {
+        require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
         updatePool(_pid);
@@ -196,6 +205,7 @@ contract MasterChef {
     }
 
     function withdraw(uint256 _pid, uint256 _amount) public {
+        require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
@@ -210,6 +220,7 @@ contract MasterChef {
     }
 
     function harvest(uint256 _pid) public{
+        require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
         updatePool(_pid);
@@ -222,6 +233,7 @@ contract MasterChef {
     }
 
     function withdrawAndHarvest(uint256 _pid, uint256 _amount) public {
+        require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
@@ -240,6 +252,7 @@ contract MasterChef {
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
     function emergencyWithdraw(uint256 _pid) public {
+        require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
         uint256 _amount = user.amount;
@@ -258,5 +271,29 @@ contract MasterChef {
         } else {
             rewardToken.safeTransfer(_to, _amount);
         }
+    }
+
+    function sweep(address _token, address _receive) public {
+        require(msg.sender == governance, "!governance");
+        require(_token != address(rewardToken), "!_token");
+        uint256 length = poolInfos.length;
+        for (uint256 i = 0; i < length; i++) {
+            require(_token != address(poolInfos[i].lpToken), "!_token");
+        }
+
+        uint256 _balance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).safeTransfer(_receive, _balance);
+    }
+
+    function sweepLpToken(uint256 _pid, address _receive) public {
+        require(msg.sender == governance, "!governance");
+        require(_pid < poolInfos.length, "!_pid");
+        PoolInfo storage pool = poolInfos[_pid];
+        IERC20 _token = pool.lpToken;
+        require(_token != rewardToken, "!_token");
+
+        uint256 _balance = _token.balanceOf(address(this));
+        uint256 _amount = _balance.sub(pool.amount);
+        _token.safeTransfer(_receive, _amount);
     }
 }
