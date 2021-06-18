@@ -181,7 +181,7 @@ contract VoteController {
 
     function setProposalId(address _comp, uint256 _proposalId) public {
         require(msg.sender == governance, "!governance");
-        proposalIds[_comp] == _proposalId;
+        proposalIds[_comp] = _proposalId;
     }
 
     function setType(address _comp, uint8 _type) public {

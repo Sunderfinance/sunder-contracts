@@ -39,6 +39,7 @@ contract MasterChef {
     }
 
     address public governance;
+    address public pendingGovernance;
     IERC20  public sunder;
 
     uint256 public totalReward;
@@ -66,9 +67,15 @@ contract MasterChef {
         governance = msg.sender;
     }
 
-    function setGovernance(address _governance) public {
+    function acceptGovernance() public {
+        require(msg.sender == pendingGovernance, "!pendingGovernance");
+        governance = msg.sender;
+        pendingGovernance = address(0);
+    }
+
+    function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
-        governance = _governance;
+        pendingGovernance = _pendingGovernance;
     }
 
     function setReward(uint256 _startTime, uint256 _endTime, uint256 _reward, bool _withUpdate) public {
