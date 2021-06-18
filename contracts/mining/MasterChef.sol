@@ -308,7 +308,6 @@ contract MasterChef {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         IERC20 _token = pool.lpToken;
-        require(_token != rewardToken, "!_token");
 
         uint256 _balance = _token.balanceOf(address(this));
         uint256 _amount = _balance.sub(pool.amount);
