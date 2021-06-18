@@ -30,6 +30,7 @@ contract MasterChef {
 
     IERC20  public rewardToken;
     uint256 public totalReward;
+    uint256 public totalGain;
     uint256 public epochId;
     uint256 public intervalTime;
 
@@ -77,6 +78,7 @@ contract MasterChef {
             massUpdatePools();
         }
 
+        // transfer _reward token
         uint256 _balance = rewardToken.balanceOf(address(this));
         require(_balance >= _reward, "!_reward");
         reward = _reward;
@@ -104,7 +106,7 @@ contract MasterChef {
         poolInfos[_pid].allocPoint = _allocPoint;
     }
 
-    function addLpToken(IERC20 _lpToken, uint256 _allocPoint, bool _withUpdate) public {
+    function addPool(IERC20 _lpToken, uint256 _allocPoint, bool _withUpdate) public {
         require(msg.sender == governance, "!governance");
         uint256 length = poolInfos.length;
         for (uint256 i = 0; i < length; i++) {
@@ -277,8 +279,10 @@ contract MasterChef {
     function safeTokenTransfer(address _to, uint256 _amount) internal {
         uint256 _balance = rewardToken.balanceOf(address(this));
         if (_amount > _balance) {
+            totalGain = totalGain.add(_balance);
             rewardToken.safeTransfer(_to, _balance);
         } else {
+            totalGain = totalGain.add(_amount);
             rewardToken.safeTransfer(_to, _amount);
         }
     }
