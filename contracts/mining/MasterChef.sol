@@ -290,6 +290,19 @@ contract MasterChef {
         return poolInfos.length;
     }
 
+    function annualReward(uint256 _pid) public view returns (uint256){
+        require(_pid < poolInfos.length, "!_pid");
+        PoolInfo storage pool = poolInfos[_pid];
+        // SECS_PER_YEAR  31_556_952  365.2425 days
+        return reward.mul(31556952).mul(pool.allocPoint).div(totalAllocPoint).div(period);
+    }
+
+    function annualRewardPerShare(uint256 _pid) public view returns (uint256){
+        require(_pid < poolInfos.length, "!_pid");
+        PoolInfo storage pool = poolInfos[_pid];
+        return annualReward(_pid).mul(1e18).div(pool.amount);
+    }
+
     function sweep(address _token) public {
         require(msg.sender == governance, "!governance");
         require(_token != address(rewardToken), "!_token");
