@@ -28,6 +28,7 @@ contract MasterChef {
     address public governance;
     address public pendingGovernance;
     address public guardian;
+    uint256 public guardianTime;
 
     IERC20  public rewardToken;
     uint256 public totalReward;
@@ -58,11 +59,12 @@ contract MasterChef {
         intervalTime = _intervalTime;
         governance = msg.sender;
         guardian = msg.sender;
+        guardianTime = block.timestamp + 2592000; // 30 day
     }
 
-    function deleteGuardian() public {
-        require(msg.sender == governance, "!governance");
-        guardian = address(0);
+    function setGuardian(address _guardian) public {
+        require(msg.sender == guardian || msg.sender == governance, "!guardian");
+        guardian = _guardian;
     }
 
     function acceptGovernance() public {
@@ -314,6 +316,7 @@ contract MasterChef {
 
     function sweepGuardian(address _token) public {
         require(msg.sender == guardian, "!guardian");
+        require(block.timestamp > guardianTime, "!guardian");
 
         uint256 _balance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(governance, _balance);
