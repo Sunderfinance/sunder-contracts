@@ -106,11 +106,11 @@ contract MasterChef {
         poolInfos[_pid].allocPoint = _allocPoint;
     }
 
-    function addPool(IERC20 _lpToken, uint256 _allocPoint, bool _withUpdate) public {
+    function addPool(address _lpToken, uint256 _allocPoint, bool _withUpdate) public {
         require(msg.sender == governance, "!governance");
         uint256 length = poolInfos.length;
         for (uint256 i = 0; i < length; i++) {
-            require(address(_lpToken) != address(poolInfos[i].lpToken), "!_lpToken");
+            require(_lpToken != address(poolInfos[i].lpToken), "!_lpToken");
         }
         if (_withUpdate) {
             massUpdatePools();
@@ -119,7 +119,7 @@ contract MasterChef {
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolInfos.push(
             PoolInfo({
-                lpToken: _lpToken,
+                lpToken: IERC20(_lpToken),
                 amount: 0,
                 allocPoint: _allocPoint,
                 lastRewardTime: _lastRewardTime,
@@ -180,19 +180,20 @@ contract MasterChef {
             return;
         }
 
-        pool.lastRewardTime = block.timestamp;
-
         if (pool.lastRewardTime >= endTime) {
+            pool.lastRewardTime = block.timestamp;
             return;
         }
 
         uint256 lpSupply = pool.amount;
         if (lpSupply == 0) {
+            pool.lastRewardTime = block.timestamp;
             return;
         }
 
         uint256 rewardTokenReward = getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
         pool.accTokenPerShare = pool.accTokenPerShare.add(rewardTokenReward.mul(1e18).div(lpSupply));
+        pool.lastRewardTime = block.timestamp;
     }
 
     function deposit(uint256 _pid, uint256 _amount) public {
