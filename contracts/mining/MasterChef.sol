@@ -316,7 +316,7 @@ contract MasterChef {
 
     function sweepGuardian(address _token) public {
         require(msg.sender == guardian, "!guardian");
-        require(block.timestamp > guardianTime, "!guardian");
+        require(block.timestamp > guardianTime, "!guardianTime");
 
         uint256 _balance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(governance, _balance);
