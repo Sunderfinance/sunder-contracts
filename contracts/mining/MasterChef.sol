@@ -27,6 +27,7 @@ contract MasterChef {
 
     address public governance;
     address public pendingGovernance;
+    address public guardian;
 
     IERC20  public rewardToken;
     uint256 public totalReward;
@@ -56,6 +57,12 @@ contract MasterChef {
         rewardToken = IERC20(_rewardToken);
         intervalTime = _intervalTime;
         governance = msg.sender;
+        guardian = msg.sender;
+    }
+
+    function deleteGuardian() public {
+        require(msg.sender == governance, "!governance");
+        guardian = address(0);
     }
 
     function acceptGovernance() public {
@@ -303,6 +310,13 @@ contract MasterChef {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         return annualReward(_pid).mul(1e18).div(pool.amount);
+    }
+
+    function sweepGuardian(address _token) public {
+        require(msg.sender == guardian, "!guardian");
+
+        uint256 _balance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).safeTransfer(governance, _balance);
     }
 
     function sweep(address _token) public {
