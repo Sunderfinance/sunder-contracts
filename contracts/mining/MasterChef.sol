@@ -132,19 +132,17 @@ contract MasterChef {
         if (_to <= startTime || _from >= endTime) {
             return 0;
         }
-        if (_to < endTime){
-            if (_from < startTime) {
-                return _to.sub(startTime).mul(reward).div(period);
-            } else {
-                return _to.sub(_from).mul(reward).div(period);
-            }
-        } else {
-            if (_from <= startTime){
-                return reward;
-            } else if (_from < endTime) {
-                return endTime.sub(_from).mul(reward).div(period);
-            }
+
+        if (_from < startTime) {
+            _from = startTime; // [startTime, endTime)
         }
+
+        if (_to > endTime){
+            _to = endTime;  // (startTime, endTime]
+        }
+        require(_from < _to, "!_from < _to");
+
+        return _to.sub(_from).mul(reward).div(period);
     }
 
     // View function to see pending Token on frontend.
