@@ -156,7 +156,8 @@ contract MasterChef {
             uint256 rewardTokenReward =  getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
             accTokenPerShare = accTokenPerShare.add(rewardTokenReward.mul(1e18).div(lpSupply));
         }
-        return user.amount.mul(accTokenPerShare).div(1e18).sub(user.rewardDebt);
+        uint256 _reward = user.amount.mul(accTokenPerShare).div(1e18).sub(user.rewardDebt);
+        return user.reward.add(_reward);
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
