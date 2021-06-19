@@ -63,7 +63,7 @@ contract MasterChef {
     }
 
     function setGuardian(address _guardian) public {
-        require(msg.sender == guardian || msg.sender == governance, "!guardian");
+        require(msg.sender == guardian, "!guardian");
         guardian = _guardian;
     }
 
