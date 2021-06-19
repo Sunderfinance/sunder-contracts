@@ -69,11 +69,11 @@ contract MasterChef {
         pendingGovernance = _pendingGovernance;
     }
 
-    function setReward(uint256 _startTime, uint256 _endTime, uint256 _reward, bool _withUpdate) public {
+    function setReward(uint256 _startTime, uint256 _period, uint256 _reward, bool _withUpdate) public {
         require(msg.sender == governance, "!governance");
         require(endTime < block.timestamp, "!endTime");
         require(block.timestamp <= _startTime, "!_startTime");
-        require(_startTime < _endTime, "!_endTime");
+        require(_period > 0, "!_period");
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -85,8 +85,8 @@ contract MasterChef {
 
         totalReward = totalReward.add(reward);
         startTime = _startTime;
-        endTime = _endTime;
-        period = _endTime.sub(_startTime);
+        endTime = _startTime.add(_period);
+        period = _period;
         epochId++;
     }
 
