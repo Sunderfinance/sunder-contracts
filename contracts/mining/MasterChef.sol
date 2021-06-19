@@ -151,7 +151,7 @@ contract MasterChef {
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][_user];
         uint256 accTokenPerShare = pool.accTokenPerShare;
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        uint256 lpSupply = pool.amount;
         if (block.timestamp > startTime && pool.lastRewardTime < endTime && block.timestamp > pool.lastRewardTime && lpSupply != 0) {
             uint256 rewardTokenReward =  getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
             accTokenPerShare = accTokenPerShare.add(rewardTokenReward.mul(1e18).div(lpSupply));
@@ -204,7 +204,7 @@ contract MasterChef {
             uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
             user.reward = _reward.add(user.reward);
         }
-        pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
+        pool.lpToken.safeTransferFrom(msg.sender, address(this), _amount);
         user.depositTime = block.timestamp;
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
@@ -224,7 +224,7 @@ contract MasterChef {
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         pool.amount = pool.amount.sub(_amount);
-        pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        pool.lpToken.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -255,7 +255,7 @@ contract MasterChef {
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         pool.amount = pool.amount.sub(_amount);
-        pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        pool.lpToken.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _pid, _amount);
         emit Harvest(msg.sender, _pid, _reward);
     }
@@ -270,7 +270,7 @@ contract MasterChef {
         user.amount = 0;
         user.rewardDebt = 0;
         pool.amount = pool.amount.sub(_amount);
-        pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        pool.lpToken.safeTransfer(msg.sender, _amount);
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
 
