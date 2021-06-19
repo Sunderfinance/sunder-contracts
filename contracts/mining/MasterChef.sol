@@ -172,7 +172,7 @@ contract MasterChef {
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         require(_pid < poolInfos.length, "!_pid");
-        
+
         PoolInfo storage pool = poolInfos[_pid];
         if (block.timestamp <= pool.lastRewardTime) {
             return;
@@ -188,7 +188,7 @@ contract MasterChef {
             return;
         }
 
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        uint256 lpSupply = pool.amount;
         if (lpSupply == 0) {
             return;
         }
