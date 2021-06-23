@@ -24,6 +24,7 @@ contract VoteController {
     mapping (address => address) public proposes;
     mapping (address => address) public governors;
     mapping (address => uint256) public proposalIds;
+    mapping (address => uint256) public voteProposalIds;
     mapping (address => uint8) public types;
 
     constructor (address _controller, address _operator) public {
@@ -71,10 +72,12 @@ contract VoteController {
     function prepareVote(address _comp, uint256 _proposalId, uint256 _against, uint256 _for, uint256 _abstain) public {
         require(msg.sender == operator || msg.sender == governance, "!operator");
         require(proposalIds[_comp] == 0, "!proposalId");
-        require(types[_comp] == 0, "!types");
-        proposalIds[_comp] = _proposalId;
+        // require(types[_comp] == 0, "!types");
         uint256 _amount = _for.add(_against).add(_abstain);
+        require(_amount > 0, "!_amount");
+
         IController(controller).withdrawVote(_comp, _amount);
+        proposalIds[_comp] = _proposalId;
 
         uint8 _type = 0;
         if (_against > 0) {
@@ -110,6 +113,9 @@ contract VoteController {
         uint8 _type = types[_comp];
         require(_type > 0, "!type");
 
+        proposalIds[_comp] = 0;
+        voteProposalIds[_comp] = _proposalId;
+
         uint256 _totalAmount;
         if (_type >= 4) {
             address _vote = againsts[_comp];
@@ -133,11 +139,11 @@ contract VoteController {
 
     function castVote(address _comp, uint256 _proposalId) public {
         require(msg.sender == operator || msg.sender == governance, "!operator");
-        require(proposalIds[_comp] == _proposalId, "!proposalId");
+        require(voteProposalIds[_comp] == _proposalId, "!proposalId");
         uint8 _type = types[_comp];
         require(_type > 0, "!type");
 
-        proposalIds[_comp] = 0;
+        voteProposalIds[_comp] = 0;
         types[_comp] = 0;
 
         if (_type >= 4) {
