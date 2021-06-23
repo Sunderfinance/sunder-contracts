@@ -14,6 +14,7 @@ contract Vote {
     using SafeERC20 for IERC20;
 
     address public governance;
+    address public pendingGovernance;
     address public voteController;
     uint8   public support;
 
@@ -23,9 +24,15 @@ contract Vote {
         support = _support;
     }
 
-    function setGovernance(address _governance) public {
+    function acceptGovernance() public {
+        require(msg.sender == pendingGovernance, "!pendingGovernance");
+        governance = msg.sender;
+        pendingGovernance = address(0);
+    }
+
+    function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
-        governance = _governance;
+        pendingGovernance = _pendingGovernance;
     }
 
     function setVoteController(address _voteController) public {

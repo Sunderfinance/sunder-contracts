@@ -15,6 +15,7 @@ contract VoteController {
     using SafeMath for uint256;
 
     address public governance;
+    address public pendingGovernance;
     address public controller;
     address public operator;
 
@@ -33,9 +34,15 @@ contract VoteController {
         operator =  _operator;
     }
 
-    function setGovernance(address _governance) public {
+    function acceptGovernance() public {
+        require(msg.sender == pendingGovernance, "!pendingGovernance");
+        governance = msg.sender;
+        pendingGovernance = address(0);
+    }
+
+    function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
-        governance = _governance;
+        pendingGovernance = _pendingGovernance;
     }
 
     function setController(address _controller) public {

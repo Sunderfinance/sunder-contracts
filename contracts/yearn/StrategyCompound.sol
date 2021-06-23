@@ -15,6 +15,7 @@ contract StrategyCompound {
     using SafeMath for uint256;
 
     address public governance;
+    address public pendingGovernance;
     address public controller;
     address public strategist;
     uint256 public debt;
@@ -70,13 +71,19 @@ contract StrategyCompound {
         controller = _controller;
     }
 
-    function getName() external pure returns (string memory) {
-        return "StrategyCompound";
+    function acceptGovernance() public {
+        require(msg.sender == pendingGovernance, "!pendingGovernance");
+        governance = msg.sender;
+        pendingGovernance = address(0);
     }
 
-    function setGovernance(address _governance) external {
+    function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
-        governance = _governance;
+        pendingGovernance = _pendingGovernance;
+    }
+
+    function getName() external pure returns (string memory) {
+        return "StrategyCompound";
     }
 
     function setController(address _controller) external {

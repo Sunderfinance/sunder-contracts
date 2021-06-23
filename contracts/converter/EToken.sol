@@ -23,8 +23,9 @@ contract EToken {
     /// @dev Official record of token balances for each account
     mapping (address => uint256) internal balances;
 
-    address public convController;
     address public governance;
+    address public pendingGovernance;
+    address public convController;
     address public vault;
 
     /// @dev The standard EIP-20 transfer event
@@ -90,9 +91,15 @@ contract EToken {
         emit Transfer(src, dst, amount);
     }
 
-    function setGovernance(address _governance) public {
+    function acceptGovernance() public {
+        require(msg.sender == pendingGovernance, "!pendingGovernance");
+        governance = msg.sender;
+        pendingGovernance = address(0);
+    }
+
+    function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
-        governance = _governance;
+        pendingGovernance = _pendingGovernance;
     }
 
     function setConvController(address _convController) public {

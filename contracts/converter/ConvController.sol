@@ -16,6 +16,7 @@ contract ConvController {
     using SafeMath for uint256;
 
     address public governance;
+    address public pendingGovernance;
     address public reward;
     address public controller;
 
@@ -40,10 +41,17 @@ contract ConvController {
         operator = _operator;
     }
 
-    function setGovernance(address _governance) public {
-        require(msg.sender == governance, "!governance");
-        governance = _governance;
+    function acceptGovernance() public {
+        require(msg.sender == pendingGovernance, "!pendingGovernance");
+        governance = msg.sender;
+        pendingGovernance = address(0);
     }
+
+    function setPendingGovernance(address _pendingGovernance) public {
+        require(msg.sender == governance, "!governance");
+        pendingGovernance = _pendingGovernance;
+    }
+
     function setController(address _controller) public {
         require(msg.sender == governance, "!governance");
         controller = _controller;

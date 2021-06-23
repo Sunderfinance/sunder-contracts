@@ -15,6 +15,7 @@ contract Controller {
     using SafeMath for uint256;
 
     address public governance;
+    address public pendingGovernance;
     address public strategist;
     address public onesplit;
     address public rewards;
@@ -34,6 +35,17 @@ contract Controller {
         strategist = msg.sender;
         onesplit = address(0x50FDA034C0Ce7a8f7EFDAebDA7Aa7cA21CC1267e);
         rewards = _rewards;
+    }
+
+    function acceptGovernance() public {
+        require(msg.sender == pendingGovernance, "!pendingGovernance");
+        governance = msg.sender;
+        pendingGovernance = address(0);
+    }
+
+    function setPendingGovernance(address _pendingGovernance) public {
+        require(msg.sender == governance, "!governance");
+        pendingGovernance = _pendingGovernance;
     }
 
     function setRewards(address _rewards) public {
@@ -64,11 +76,6 @@ contract Controller {
     function setOneSplit(address _onesplit) public {
         require(msg.sender == governance, "!governance");
         onesplit = _onesplit;
-    }
-
-    function setGovernance(address _governance) public {
-        require(msg.sender == governance, "!governance");
-        governance = _governance;
     }
 
     function setVault(address _token, address _vault) public {

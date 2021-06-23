@@ -13,9 +13,10 @@ contract SVault is ERC20 {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    IERC20  public eToken;
     address public governance;
+    address public pendingGovernance;
     address public controller;
+    IERC20  public eToken;
 
     mapping(address => uint256) public depositAt;
 
@@ -32,9 +33,15 @@ contract SVault is ERC20 {
         _setupDecimals(ERC20(_eToken).decimals());
     }
 
-    function setGovernance(address _governance) public {
+    function acceptGovernance() public {
+        require(msg.sender == pendingGovernance, "!pendingGovernance");
+        governance = msg.sender;
+        pendingGovernance = address(0);
+    }
+
+    function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
-        governance = _governance;
+        pendingGovernance = _pendingGovernance;
     }
 
     function setController(address _controller) public {
