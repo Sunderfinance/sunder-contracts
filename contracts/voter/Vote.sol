@@ -29,12 +29,10 @@ contract Vote {
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-
     function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-
     function setVoteController(address _voteController) public {
         require(msg.sender == governance, "!governance");
         voteController = _voteController;
@@ -83,6 +81,4 @@ contract Vote {
         require(governor != address(0), "!governor");
         return IGovernorDelegate(governor).proposals(_proposalId);
     }
-
-
 }

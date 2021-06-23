@@ -17,8 +17,8 @@ contract ConvController {
 
     address public governance;
     address public pendingGovernance;
-    address public reward;
     address public controller;
+    address public reward;
 
     address public operator;
     mapping(address => bool) public locks;
@@ -46,12 +46,10 @@ contract ConvController {
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-
     function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-
     function setController(address _controller) public {
         require(msg.sender == governance, "!governance");
         controller = _controller;

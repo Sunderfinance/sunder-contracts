@@ -18,9 +18,9 @@ contract StrategyCompound {
     address public pendingGovernance;
     address public controller;
     address public strategist;
+
     uint256 public debt;
     bool public claim;
-
     uint256 public performanceFee = 500;
     uint256 constant public performanceMax = 10000;
 
@@ -76,26 +76,27 @@ contract StrategyCompound {
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-
     function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
+    }
+    function setController(address _controller) external {
+        require(msg.sender == governance, "!governance");
+        controller = _controller;
+    }
+    function setStrategist(address _strategist) external {
+        require(msg.sender == governance, "!governance");
+        strategist = _strategist;
     }
 
     function getName() external pure returns (string memory) {
         return "StrategyCompound";
     }
 
-    function setController(address _controller) external {
-        require(msg.sender == governance, "!governance");
-        controller = _controller;
+    function setClaim(bool _claim) public {
+        require(msg.sender == strategist || msg.sender == governance, "!authorized");
+        claim = _claim;
     }
-
-    function setStrategist(address _strategist) external {
-        require(msg.sender == governance, "!governance");
-        strategist = _strategist;
-    }
-
     function setPerformanceFee(uint256 _performanceFee) external {
         require(msg.sender == governance, "!governance");
         performanceFee = _performanceFee;
@@ -133,7 +134,7 @@ contract StrategyCompound {
     }
 
     // Withdraw all funds, normally used when migrating strategies
-    function withdrawAll(address _receiver) external returns (uint256 _balance) {
+    function withdrawAll(address _receiver) public returns (uint256 _balance) {
         require(msg.sender == controller, "!controller");
         uint256 _amount = balanceCComp();
         if (_amount > 0) {
@@ -144,17 +145,12 @@ contract StrategyCompound {
         IERC20(want).safeTransfer(_receiver, _balance);
     }
 
-    function withdraw(address _asset) external returns (uint256 _balance) {
+    function withdraw(address _asset) public returns (uint256 _balance) {
         require(msg.sender == controller, "!controller");
         require(want != address(_asset), "want");
         require(cComp != address(_asset), "cComp");
         _balance = IERC20(_asset).balanceOf(address(this));
         IERC20(_asset).safeTransfer(controller, _balance);
-    }
-
-    function setClaim(bool _claim) public {
-        require(msg.sender == strategist || msg.sender == governance, "!authorized");
-        claim = _claim;
     }
 
     function earn() public {

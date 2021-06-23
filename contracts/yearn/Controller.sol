@@ -17,18 +17,18 @@ contract Controller {
     address public governance;
     address public pendingGovernance;
     address public strategist;
-    address public onesplit;
     address public rewards;
 
-    address public voteController;
     address public convController;
+    address public voteController;
+
+    address public onesplit;
+    uint256 public split = 500;
+    uint256 public constant max = 10000;
 
     mapping(address => address) public vaults;
     mapping(address => address) public strategies;
     mapping(address => mapping(address => bool)) public approvedStrategies;
-
-    uint256 public split = 500;
-    uint256 public constant max = 10000;
 
     constructor(address _rewards) public {
         governance = msg.sender;
@@ -42,12 +42,14 @@ contract Controller {
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-
     function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-
+    function setStrategist(address _strategist) public {
+        require(msg.sender == governance, "!governance");
+        strategist = _strategist;
+    }
     function setRewards(address _rewards) public {
         require(msg.sender == governance, "!governance");
         rewards = _rewards;
@@ -57,25 +59,18 @@ contract Controller {
         require(msg.sender == governance, "!governance");
         convController = _convController;
     }
-
     function setVoteController(address _voteController) public {
         require(msg.sender == governance, "!governance");
         voteController = _voteController;
     }
 
-    function setStrategist(address _strategist) public {
-        require(msg.sender == governance, "!governance");
-        strategist = _strategist;
-    }
-
-    function setSplit(uint256 _split) public {
-        require(msg.sender == governance, "!governance");
-        split = _split;
-    }
-
     function setOneSplit(address _onesplit) public {
         require(msg.sender == governance, "!governance");
         onesplit = _onesplit;
+    }
+    function setSplit(uint256 _split) public {
+        require(msg.sender == governance, "!governance");
+        split = _split;
     }
 
     function setVault(address _token, address _vault) public {
@@ -88,12 +83,10 @@ contract Controller {
         require(msg.sender == governance, "!governance");
         approvedStrategies[_token][_strategy] = true;
     }
-
     function revokeStrategy(address _token, address _strategy) public {
         require(msg.sender == governance, "!governance");
         approvedStrategies[_token][_strategy] = false;
     }
-
     function setStrategy(address _token, address _strategy) public {
         require(msg.sender == strategist || msg.sender == governance, "!strategist");
         require(approvedStrategies[_token][_strategy] == true, "!approved");

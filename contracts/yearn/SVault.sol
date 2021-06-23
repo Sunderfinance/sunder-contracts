@@ -38,18 +38,16 @@ contract SVault is ERC20 {
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-
     function setPendingGovernance(address _pendingGovernance) public {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-
     function setController(address _controller) public {
         require(msg.sender == governance, "!governance");
         controller = _controller;
     }
 
-    function depositAll() external {
+    function depositAll() public {
         deposit(eToken.balanceOf(msg.sender));
     }
 
@@ -69,7 +67,7 @@ contract SVault is ERC20 {
         emit Deposit(msg.sender, _amount, _shares);
     }
 
-    function withdrawAll() external {
+    function withdrawAll() public {
         withdraw(balanceOf(msg.sender));
     }
 
