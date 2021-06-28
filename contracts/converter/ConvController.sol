@@ -19,6 +19,7 @@ contract ConvController {
     address public pendingGovernance;
     address public controller;
     address public reward;
+    bool public unlocked;
 
     address public operator;
     mapping(address => bool) public locks;
@@ -39,6 +40,7 @@ contract ConvController {
         controller = _controller;
         reward = _reward;
         operator = _operator;
+        unlocked = true;
     }
 
     function acceptGovernance() public {
@@ -76,18 +78,22 @@ contract ConvController {
         locks[_token] = false;
     }
 
-    function convertAll(address _token) external {
+    function convertAll(address _token) public {
         convert(_token, IERC20(_token).balanceOf(msg.sender));
     }
 
     function convert(address _token, uint256 _amount) public {
+        require(unlocked, "!unlock");
+        unlocked = false;
         require(dtokens[_token] != address(0), "address(0)");
 
         convertAt[_token][msg.sender] = block.number;
         IERC20(_token).safeTransferFrom(msg.sender, controller, _amount);
         _mint(_token, msg.sender, _amount);
         IController(controller).deposit(_token, _amount);
+
         emit Convert(msg.sender, _token, _amount);
+        unlocked = true;
     }
 
     function mint(address _token, address _minter, uint256 _amount) public {
@@ -109,6 +115,8 @@ contract ConvController {
     }
 
     function redeem(address _token, uint256 _amount) public {
+        require(unlocked, "!unlock");
+        unlocked = false;
         require(!locks[_token], "locking");
         require(dtokens[_token] != address(0), "address(0)");
         require(convertAt[_token][msg.sender] < block.number, "!convertAt");
@@ -130,10 +138,12 @@ contract ConvController {
         IERC20(_token).safeTransfer(reward, _fee);
         IERC20(_token).safeTransfer(msg.sender, _amount.sub(_fee));
         emit Redeem(msg.sender, _token, _amount, _fee);
+        unlocked = true;
     }
 
     function createPair(address _token) external  returns (address _dtoken, address _etoken) {
-        require(msg.sender == governance, "!governance");
+        require(unlocked, "!unlock");
+        unlocked = false;
         require(dtokens[_token] == address(0), "!address(0)");
 
         bytes memory _nameD = abi.encodePacked("dToken ", ERC20(_token).name());
@@ -160,6 +170,7 @@ contract ConvController {
         etokens[_token] = _etoken;
 
         emit PairCreated(_token, _dtoken, _etoken);
+        unlocked = true;
     }
 
     function maxRedeemAmount(address _token) public view returns (uint256) {
