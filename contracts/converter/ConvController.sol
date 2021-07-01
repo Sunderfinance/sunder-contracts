@@ -19,13 +19,14 @@ contract ConvController {
     address public pendingGovernance;
     address public controller;
     address public reward;
+    mapping(address => bool) public vaults;
     bool public unlocked;
+
+    uint256 public withdrawalFee = 10;
+    uint256 constant public withdrawalMax = 10000;
 
     address public operator;
     mapping(address => bool) public locks;
-
-    uint256 public withdrawalFee = 200;
-    uint256 constant public withdrawalMax = 10000;
 
     mapping(address => address) public dtokens;
     mapping(address => address) public etokens;
@@ -60,6 +61,10 @@ contract ConvController {
         require(msg.sender == governance, "!governance");
         reward = _reward;
     }
+    function setVaults(address _token, bool _bool) public {
+        require(msg.sender == governance, "!governance");
+        vaults[_token] = _bool;
+    }
     function setOperator(address _operator) public {
         require(msg.sender == governance, "!governance");
         operator = _operator;
@@ -88,9 +93,14 @@ contract ConvController {
         require(dtokens[_token] != address(0), "address(0)");
 
         convertAt[_token][msg.sender] = block.number;
-        IERC20(_token).safeTransferFrom(msg.sender, controller, _amount);
+
+        if (vaults[_token]) {
+            IERC20(_token).safeTransferFrom(msg.sender, controller, _amount);
+            IController(controller).deposit(_token, _amount);
+        } else {
+            IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
+        }
         _mint(_token, msg.sender, _amount);
-        IController(controller).deposit(_token, _amount);
 
         emit Convert(msg.sender, _token, _amount);
         unlocked = true;
@@ -126,9 +136,11 @@ contract ConvController {
 
         uint256 _balance = IERC20(_token).balanceOf(address(this));
         if (_balance < _amount) {
-            uint256 _withdraw = _amount.sub(_balance);
-            IController(controller).withdraw(_token, _withdraw);
-            _balance = IERC20(_token).balanceOf(address(this));
+            if (vaults[_token]) {
+                uint256 _withdraw = _amount.sub(_balance);
+                IController(controller).withdraw(_token, _withdraw);
+                _balance = IERC20(_token).balanceOf(address(this));
+            }
             if (_balance < _amount) {
                 _amount = _balance;
             }
@@ -185,6 +197,12 @@ contract ConvController {
 
     function tokenBalance(address _token) public view returns (uint256) {
         return IERC20(_token).balanceOf(address(this));
+    }
+
+    function dTokenEToken(address _token) public view returns (address _dtoken, address _etoken) {
+        _dtoken = dtokens[_token];
+        _etoken = etokens[_token];
+        return (_dtoken, _etoken);
     }
 
     function deposit(address _token) public {

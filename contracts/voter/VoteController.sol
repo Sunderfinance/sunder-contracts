@@ -51,6 +51,10 @@ contract VoteController {
         require(msg.sender == governance, "!governance");
         operator = _operator;
     }
+    function setGovernor(address _comp, address _governor) public {
+        require(msg.sender == governance, "!governance");
+        governors[_comp] = _governor;
+    }
 
     function setAgainst(address _comp, address _against) public {
         require(msg.sender == governance, "!governance");
