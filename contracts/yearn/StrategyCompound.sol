@@ -25,8 +25,10 @@ contract StrategyCompound {
     uint256 constant public performanceMax = 10000;
 
     /*
-    address constant public want  = address(0xc00e94Cb662C3520282E6f5717214004A7f26888); // comp
-    address constant public cComp = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
+    address constant public want  = address(0xc00e94Cb662C3520282E6f5717214004A7f26888); // mainnet comp
+    address constant public cComp = address(0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4);
+    address constant public want  = address(0xf76D4a441E4ba86A923ce32B89AFF89dBccAA075); // ropsten comp
+    address constant public cComp = address(0x70014768996439F71C041179Ffddce973a83EEf2);
     address constant public eToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
     address constant public dToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
     */
@@ -38,7 +40,7 @@ contract StrategyCompound {
     // test end
 
     ICompController constant public compController = ICompController(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
-
+    // ICompController constant public compController = ICompController(0xcfa7b0e37f5AC60f3ae25226F5e39ec59AD26152); // ropsten
     // test
     function testAddress(address _want, address _eToken, address _dToken) public {
         want = _want;
