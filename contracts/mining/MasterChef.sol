@@ -33,13 +33,21 @@ contract MasterChef {
     IERC20  public rewardToken;
     uint256 public totalReward;
     uint256 public totalGain;
-    uint256 public epochId;
     uint256 public intervalTime;
 
+    uint256 public epochId;
     uint256 public reward;
     uint256 public startTime;
     uint256 public endTime;
     uint256 public period;
+
+    struct EpochReward{
+        uint256 epochId;
+        uint256 startTime;
+        uint256 endTime;
+        uint256 reward;
+    }
+    mapping (uint256 => EpochReward) public epochRewards;
 
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
@@ -59,12 +67,17 @@ contract MasterChef {
         intervalTime = _intervalTime;
         governance = msg.sender;
         guardian = msg.sender;
-        guardianTime = block.timestamp + 2592000; // 30 day
+        guardianTime = block.timestamp + 30 days;
     }
 
     function setGuardian(address _guardian) public {
         require(msg.sender == guardian, "!guardian");
         guardian = _guardian;
+    }
+
+    function addGuardianTime(uint256 _addTime) public {
+        require(msg.sender == guardian || msg.sender == pendingGovernance, "!guardian");
+        guardianTime = guardianTime.add(_addTime);
     }
 
     function acceptGovernance() public {
@@ -82,6 +95,7 @@ contract MasterChef {
         require(msg.sender == governance, "!governance");
         require(endTime < block.timestamp, "!endTime");
         require(block.timestamp <= _startTime, "!_startTime");
+        require(_startTime <= block.timestamp + 30 days, "!_startTime");
         require(_period > 0, "!_period");
         if (_withUpdate) {
             massUpdatePools();
@@ -97,6 +111,14 @@ contract MasterChef {
         endTime = _startTime.add(_period);
         period = _period;
         epochId++;
+
+        EpochReward memory epochReward = EpochReward({
+            epochId: epochId,
+            startTime: _startTime,
+            endTime: endTime,
+            reward: _reward
+        });
+        epochRewards[epochId] = epochReward;
     }
 
     function setIntervalTime(uint256 _intervalTime) public {
