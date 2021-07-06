@@ -44,7 +44,6 @@ contract StrategyCompound {
     // test
     function testAddress(address _want, address _eToken, address _dToken) public {
         want = _want;
-        cComp = address(0x1201D1777654C65C052C4c401621625e173a357a);
         eToken = _eToken;
         dToken = _dToken;
     }
@@ -101,6 +100,7 @@ contract StrategyCompound {
     }
     function setPerformanceFee(uint256 _performanceFee) external {
         require(msg.sender == governance, "!governance");
+        require(_performanceFee <= performanceMax, "!_performanceFee");
         performanceFee = _performanceFee;
     }
 
@@ -114,7 +114,7 @@ contract StrategyCompound {
     // Withdraw partial funds, normally used with a vault withdrawal
     function withdraw(address _receiver, uint256 _amount) external {
         require(msg.sender == controller, "!controller");
-        debt.sub(_amount);
+        debt = debt.sub(_amount);
         _withdraw(_receiver, _amount);
     }
 

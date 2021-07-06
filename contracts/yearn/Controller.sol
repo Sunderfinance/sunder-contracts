@@ -70,6 +70,7 @@ contract Controller {
     }
     function setSplit(uint256 _split) public {
         require(msg.sender == governance, "!governance");
+        require(_split <= max, "!_split");
         split = _split;
     }
 

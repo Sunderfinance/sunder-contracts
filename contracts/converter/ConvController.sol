@@ -71,6 +71,7 @@ contract ConvController {
     }
     function setWithdrawalFee(uint256 _withdrawalFee) public {
         require(msg.sender == governance, "!governance");
+        require(_withdrawalFee <= withdrawalMax, "!_withdrawalFee");
         withdrawalFee = _withdrawalFee;
     }
 
