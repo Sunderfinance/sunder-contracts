@@ -46,6 +46,7 @@ contract StrategyCompound {
         want = _want;
         eToken = _eToken;
         dToken = _dToken;
+        cComp = address(0x1201D1777654C65C052C4c401621625e173a357a);
     }
 
     function testHarvest() public {
@@ -206,6 +207,13 @@ contract StrategyCompound {
 
     function totalAssets() public view returns (uint256) {
         return balanceWant().add(balanceCCompToWant());
+    }
+
+    function eTokenTotalSupply() public view returns (uint256) {
+        return IERC20(eToken).totalSupply();
+    }
+    function dTokenTotalSupply() public view returns (uint256) {
+        return IERC20(dToken).totalSupply();
     }
 
 }
