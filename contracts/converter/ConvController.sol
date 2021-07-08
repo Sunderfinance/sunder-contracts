@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.12;
-// pragma experimental ABIEncoderV2;
 
 import "@openzeppelinV3/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelinV3/contracts/token/ERC20/IERC20.sol";
@@ -33,16 +32,6 @@ contract ConvController {
     mapping(address => address) public etokens;
     address[] public tokens;
     mapping(address => mapping(address => uint256)) public convertAt;
-    /*
-    struct tokenInfo {
-        address token;
-        string name;
-        string symbol;
-        uint8 decimals;
-        address dtoken;
-        address etoken;
-    }
-    */
 
     event PairCreated(address indexed token, address indexed dtoken, address indexed etoken);
     event Convert(address indexed account, address indexed token, uint256 amount);
@@ -219,31 +208,17 @@ contract ConvController {
         return (_dtoken, _etoken);
     }
 
-    function tokensInfo() public view returns (address[] memory infos){
+    function tokensInfo() public view returns (address[] memory _tokens){
         uint256 length = tokens.length;
-        infos = new address[](tokens.length);
+        _tokens = new address[](tokens.length);
         for (uint256 i = 0; i < length; ++i) {
-            infos[i] = tokens[i];
+            _tokens[i] = tokens[i];
         }
     }
 
-    /*
-    function tokenInfos() public view returns (tokenInfo[] memory infos) {
-        uint256 length = tokens.length;
-        infos = new tokenInfo[](tokens.length);
-        for (uint256 i = 0; i < length; ++i) {
-            address _token = tokens[i];
-            infos[i] = tokenInfo({
-                token : _token,
-                name : ERC20(_token).name(),
-                symbol : ERC20(_token).symbol(),
-                decimals : ERC20(_token).decimals(),
-                dtoken : dtokens[_token],
-                etoken : etokens[_token]
-            });
-        }
+    function tokenLength() external view returns (uint256) {
+        return tokens.length;
     }
-    */
 
     function deposit(address _token) public {
         uint256 _balance = tokenBalance(_token);
