@@ -85,6 +85,9 @@ contract SVault is ERC20 {
     }
 
     function getPricePerFullShare() public view returns (uint256) {
+        if (totalSupply() == 0) {
+            return 1e18;
+        }
         return eTokenBalance().mul(1e18).div(totalSupply());
     }
 

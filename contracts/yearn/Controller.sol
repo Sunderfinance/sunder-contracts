@@ -157,20 +157,19 @@ contract Controller {
         IStrategy(_strategy).withdraw(_token);
         uint256 _after = IERC20(_token).balanceOf(address(this));
         if (_after > _before) {
-            uint256 _amount = _after.sub(_before);
+            uint256 _amount = _after - _before;
             address _want = IStrategy(_strategy).want();
             uint256[] memory _distribution;
             uint256 _expected;
             _before = IERC20(_want).balanceOf(address(this));
-            IERC20(_token).safeApprove(onesplit, 0);
             IERC20(_token).safeApprove(onesplit, _amount);
             (_expected, _distribution) = IOneSplitAudit(onesplit).getExpectedReturn(_token, _want, _amount, _parts, 0);
             IOneSplitAudit(onesplit).swap(_token, _want, _amount, _expected, _distribution, 0);
             _after = IERC20(_want).balanceOf(address(this));
             if (_after > _before) {
-                _amount = _after.sub(_before);
+                _amount = _after - _before;
                 uint256 _reward = _amount.mul(split).div(max);
-                _deposit(_want, _amount.sub(_reward));
+                _deposit(_want, _amount - _reward);
                 IERC20(_want).safeTransfer(rewards, _reward);
             }
         }
