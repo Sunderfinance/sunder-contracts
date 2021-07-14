@@ -12,4 +12,5 @@ interface IController {
     function rewards() external view returns (address);
     function want(address) external view returns (address);
     function vaults(address) external view returns (address);
+    function setHarvestInfo(address _token, uint256 _harvestReward) external;
 }

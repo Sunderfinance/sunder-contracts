@@ -59,7 +59,11 @@ contract StrategyCompound {
             uint256 _fee = _amount.mul(performanceFee).div(performanceMax);
             address _vault = IController(controller).vaults(want);
             require(_vault != address(0), "address(0)");
-            IERC20(eToken).safeTransfer(_vault, _amount.sub(_fee));
+
+            uint256 _reward = _amount - _fee;
+            IERC20(eToken).safeTransfer(_vault, _reward);
+            IController(controller).setHarvestInfo(want, _reward);
+
             IERC20(eToken).safeTransfer(IController(controller).rewards(), _fee);
             IERC20(dToken).safeTransfer(IController(controller).rewards(), _amount);
         }
@@ -182,7 +186,9 @@ contract StrategyCompound {
             uint256 _fee = _amount.mul(performanceFee).div(performanceMax);
             address _vault = IController(controller).vaults(want);
             require(_vault != address(0), "address(0)");
-            IERC20(eToken).safeTransfer(_vault, _amount.sub(_fee));
+            uint256 _reward = _amount - _fee;
+            IERC20(eToken).safeTransfer(_vault, _reward);
+            IController(controller).setHarvestInfo(want, _reward);
             IERC20(eToken).safeTransfer(IController(controller).rewards(), _fee);
             IERC20(dToken).safeTransfer(IController(controller).rewards(), _amount);
         }

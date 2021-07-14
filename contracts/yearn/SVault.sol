@@ -17,6 +17,10 @@ contract SVault is ERC20 {
     address public pendingGovernance;
     address public controller;
     IERC20  public eToken;
+    uint256 public harvestTime;
+    uint256 public harvestReward;
+    uint256 public harvestBalance;
+    uint256 public harvestPeriod;
 
     mapping(address => uint256) public depositAt;
 
@@ -31,6 +35,7 @@ contract SVault is ERC20 {
         governance = msg.sender;
         controller = _controller;
         _setupDecimals(ERC20(_eToken).decimals());
+        harvestTime = block.timestamp;
     }
 
     function acceptGovernance() public {
@@ -89,6 +94,24 @@ contract SVault is ERC20 {
             return 1e18;
         }
         return eTokenBalance().mul(1e18).div(totalSupply());
+    }
+
+    function annualRewardPerShare() public view returns (uint256) {
+        if (harvestPeriod == 0 || harvestBalance == 0) {
+            return 0;
+        }
+        // SECS_PER_YEAR  31_556_952  365.2425 days
+        return harvestReward.mul(31556952).mul(1e18).div(harvestPeriod).div(harvestBalance);
+    }
+
+    function setHarvestInfo(uint256 _harvestReward) public {
+        require(msg.sender == controller, "!controller");
+        uint256 _harvestTime = block.timestamp;
+        require(_harvestTime > harvestTime, "!_harvestTime");
+        harvestPeriod = _harvestTime - harvestTime;
+        harvestTime = _harvestTime;
+        harvestReward = _harvestReward;
+        harvestBalance = eTokenBalance();
     }
 
     function sweep(address _token) public {

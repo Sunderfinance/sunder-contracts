@@ -9,6 +9,7 @@ import "@openzeppelinV3/contracts/math/SafeMath.sol";
 import "../../interfaces/converter/IConvController.sol";
 import "../../interfaces/yearn/IOneSplitAudit.sol";
 import "../../interfaces/yearn/IStrategy.sol";
+import "../../interfaces/yearn/ISVault.sol";
 
 contract Controller {
     using SafeERC20 for IERC20;
@@ -178,6 +179,12 @@ contract Controller {
     function mint(address _token, uint256 _amount) public {
         require(msg.sender == strategies[_token], "!token strategies");
         IConvController(convController).mint(_token, msg.sender, _amount);
+    }
+
+    function setHarvestInfo(address _token, uint256 _harvestReward) public {
+        require(msg.sender == strategies[_token], "!token strategies");
+        require(vaults[_token] != address(0), "!vault");
+        ISVault(vaults[_token]).setHarvestInfo(_harvestReward);
     }
 
     function totalAssets(address _token) external view returns (uint256) {
