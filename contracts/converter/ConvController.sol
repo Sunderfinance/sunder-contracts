@@ -19,7 +19,6 @@ contract ConvController {
     address public pendingGovernance;
     address public controller;
     address public reward;
-    mapping(address => bool) public vaults;
     bool public unlocked;
 
     uint256 public withdrawalFee = 10;
@@ -62,10 +61,7 @@ contract ConvController {
         require(msg.sender == governance, "!governance");
         reward = _reward;
     }
-    function setVaults(address _token, bool _bool) public {
-        require(msg.sender == governance, "!governance");
-        vaults[_token] = _bool;
-    }
+
     function setOperator(address _operator) public {
         require(msg.sender == governance, "!governance");
         operator = _operator;
@@ -96,7 +92,7 @@ contract ConvController {
 
         convertAt[_token][msg.sender] = block.number;
 
-        if (vaults[_token]) {
+        if (IController(controller).strategies(_token) != address(0)) {
             IERC20(_token).safeTransferFrom(msg.sender, controller, _amount);
             IController(controller).deposit(_token, _amount);
         } else {
@@ -138,7 +134,7 @@ contract ConvController {
 
         uint256 _balance = IERC20(_token).balanceOf(address(this));
         if (_balance < _amount) {
-            if (vaults[_token]) {
+            if (IController(controller).strategies(_token) != address(0)) {
                 uint256 _withdraw = _amount.sub(_balance);
                 IController(controller).withdraw(_token, _withdraw);
                 _balance = IERC20(_token).balanceOf(address(this));

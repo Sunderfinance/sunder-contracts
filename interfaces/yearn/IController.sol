@@ -10,6 +10,7 @@ interface IController {
     function depositVote(address, uint256) external;
     function totalAssets(address) external view returns (uint256);
     function rewards() external view returns (address);
+    function strategies(address) external view returns (address);
     function want(address) external view returns (address);
     function vaults(address) external view returns (address);
     function setHarvestInfo(address _token, uint256 _harvestReward) external;
