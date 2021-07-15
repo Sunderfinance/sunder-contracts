@@ -184,9 +184,9 @@ contract VoteController {
     function sweep(address _token) public {
         require(msg.sender == governance, "!governance");
 
-        uint256 _bal = IERC20(_token).balanceOf(address(this));
+        uint256 _balance = IERC20(_token).balanceOf(address(this));
         address _rewards = IController(controller).rewards();
-        IERC20(_token).safeTransfer(_rewards, _bal);
+        IERC20(_token).safeTransfer(_rewards, _balance);
     }
 
     function setProposalId(address _comp, uint256 _proposalId) public {

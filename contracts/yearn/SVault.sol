@@ -118,8 +118,8 @@ contract SVault is ERC20 {
         require(msg.sender == governance, "!governance");
         require(address(eToken) != _token, "eToken = _token");
 
-        uint256 _bal = IERC20(_token).balanceOf(address(this));
+        uint256 _balance = IERC20(_token).balanceOf(address(this));
         address _rewards = IController(controller).rewards();
-        IERC20(_token).safeTransfer(_rewards, _bal);
+        IERC20(_token).safeTransfer(_rewards, _balance);
     }
 }

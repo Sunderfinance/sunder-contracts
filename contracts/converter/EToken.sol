@@ -155,7 +155,7 @@ contract EToken {
     function sweep(address _token) public {
         require(msg.sender == governance, "!governance");
 
-        uint256 _bal = IERC20(_token).balanceOf(address(this));
-        IERC20(_token).transfer(governance, _bal);
+        uint256 _balance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).transfer(governance, _balance);
     }
 }
