@@ -112,13 +112,12 @@ contract MasterChef {
         period = _period;
         epochId++;
 
-        EpochReward memory epochReward = EpochReward({
+        epochRewards[epochId] = EpochReward({
             epochId: epochId,
             startTime: _startTime,
             endTime: endTime,
             reward: _reward
         });
-        epochRewards[epochId] = epochReward;
     }
 
     function setIntervalTime(uint256 _intervalTime) public {
