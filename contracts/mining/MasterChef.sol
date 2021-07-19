@@ -22,9 +22,9 @@ contract MasterChef {
     struct PoolInfo {
         IERC20  lpToken; // Address of LP token contract.
         uint256 amount;  // How many LP tokens.
+        uint256 lastRewardTime; // Last block number that Token distribution occurs.
         uint256 allocPoint; // How many allocation points assigned to this pool. Token to distribute per block.
         uint256 allocPointOther; // How many allocation points assigned to this pool. Token to distribute per block.
-        uint256 lastRewardTime; // Last block number that Token distribution occurs.
         uint256 accTokenPerShare; // Accumulated Token per share, times 1e18. See below.
         uint256 accTokenPerShareOther; // Accumulated Token per share, times 1e18. See below.
     }
@@ -190,9 +190,9 @@ contract MasterChef {
             PoolInfo({
                 lpToken: IERC20(_lpToken),
                 amount: 0,
+                lastRewardTime: _lastRewardTime,
                 allocPoint: _allocPoint,
                 allocPointOther: _allocPointOther,
-                lastRewardTime: _lastRewardTime,
                 accTokenPerShare: 0,
                 accTokenPerShareOther: 0
             })
@@ -408,17 +408,22 @@ contract MasterChef {
         return poolInfos.length;
     }
 
-    function annualReward(uint256 _pid) public view returns (uint256){
+    function annualReward(uint256 _pid) public view returns (uint256 _annual, uint256 _annualOther){
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         // SECS_PER_YEAR  31_556_952  365.2425 days
-        return reward.mul(31556952).mul(pool.allocPoint).div(totalAllocPoint).div(period);
+        _annual = reward.mul(31556952).mul(pool.allocPoint).div(totalAllocPoint).div(period);
+        _annualOther = rewardOther.mul(31556952).mul(pool.allocPointOther).div(totalAllocPointOther).div(period);
     }
 
-    function annualRewardPerShare(uint256 _pid) public view returns (uint256){
+    function annualRewardPerShare(uint256 _pid) public view returns (uint256, uint256){
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
-        return annualReward(_pid).mul(1e18).div(pool.amount);
+        if (pool.amount == 0) {
+            return (0, 0);
+        }
+        (uint256 _annual, uint256 _annualOther) = annualReward(_pid);
+        return (_annual.mul(1e18).div(pool.amount), _annualOther.mul(1e18).div(pool.amount));
     }
 
     function sweepGuardian(address _token) public {
