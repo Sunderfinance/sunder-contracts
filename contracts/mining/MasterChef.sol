@@ -15,14 +15,18 @@ contract MasterChef {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt.
         uint256 reward;
+        uint256 rewardDebtOther; // Reward debt.
+        uint256 rewardOther;
     }
     // Info of each pool.
     struct PoolInfo {
         IERC20  lpToken; // Address of LP token contract.
         uint256 amount;  // How many LP tokens.
         uint256 allocPoint; // How many allocation points assigned to this pool. Token to distribute per block.
+        uint256 allocPointOther; // How many allocation points assigned to this pool. Token to distribute per block.
         uint256 lastRewardTime; // Last block number that Token distribution occurs.
         uint256 accTokenPerShare; // Accumulated Token per share, times 1e18. See below.
+        uint256 accTokenPerShareOther; // Accumulated Token per share, times 1e18. See below.
     }
 
     address public governance;
@@ -35,8 +39,13 @@ contract MasterChef {
     uint256 public totalGain;
     uint256 public intervalTime;
 
+    IERC20  public rewardTokenOther;
+    uint256 public totalRewardOther;
+    uint256 public totalGainOther;
+
     uint256 public epochId;
     uint256 public reward;
+    uint256 public rewardOther;
     uint256 public startTime;
     uint256 public endTime;
     uint256 public period;
@@ -46,11 +55,13 @@ contract MasterChef {
         uint256 startTime;
         uint256 endTime;
         uint256 reward;
+        uint256 rewardOther;
     }
     mapping (uint256 => EpochReward) public epochRewards;
 
     // Total allocation poitns. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint;
+    uint256 public totalAllocPointOther;
 
     // Info of each pool.
     PoolInfo[] public poolInfos;
@@ -59,7 +70,7 @@ contract MasterChef {
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event Harvest(address indexed user, uint256 indexed pid, uint256 reward);
+    event Harvest(address indexed user, uint256 indexed pid, uint256 reward, uint256 rewardOther);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid,  uint256 amount);
 
     constructor(address _rewardToken, uint256 _intervalTime) public {
@@ -91,7 +102,13 @@ contract MasterChef {
         pendingGovernance = _pendingGovernance;
     }
 
-    function setReward(uint256 _startTime, uint256 _period, uint256 _reward, bool _withUpdate) public {
+    function setRewardTokenOther(address _rewardTokenOther) public {
+        require(msg.sender == governance, "!governance");
+        require(address(rewardTokenOther) == address(0), "!rewardTokenOther");
+        rewardTokenOther = IERC20(_rewardTokenOther);
+    }
+
+    function setReward(uint256 _startTime, uint256 _period, uint256 _reward, uint256 _rewardOther, bool _withUpdate) public {
         require(msg.sender == governance, "!governance");
         require(endTime < block.timestamp, "!endTime");
         require(block.timestamp <= _startTime, "!_startTime");
@@ -102,11 +119,21 @@ contract MasterChef {
         }
 
         // transfer _reward token
-        uint256 _balance = rewardToken.balanceOf(address(this));
-        require(_balance >= _reward, "!_reward");
+        if (_reward > 0) {
+            uint256 _balance = rewardToken.balanceOf(address(this));
+            require(_balance >= _reward, "!_reward");
+            totalReward = totalReward.add(reward);
+        }
         reward = _reward;
 
-        totalReward = totalReward.add(reward);
+        // transfer _rewardOther token
+        if (_rewardOther > 0) {
+            uint256 _balanceOther = rewardTokenOther.balanceOf(address(this));
+            require(_balanceOther >= _rewardOther, "!_rewardOther");
+            totalRewardOther = totalRewardOther.add(rewardOther);
+        }
+        rewardOther = _rewardOther;
+
         startTime = _startTime;
         endTime = _startTime.add(_period);
         period = _period;
@@ -116,7 +143,8 @@ contract MasterChef {
             epochId: epochId,
             startTime: _startTime,
             endTime: endTime,
-            reward: _reward
+            reward: _reward,
+            rewardOther: _rewardOther
         });
     }
 
@@ -136,7 +164,18 @@ contract MasterChef {
         poolInfos[_pid].allocPoint = _allocPoint;
     }
 
-    function addPool(address _lpToken, uint256 _allocPoint, bool _withUpdate) public {
+    function setAllocPointOther(uint256 _pid, uint256 _allocPointOther, bool _withUpdate) public {
+        require(msg.sender == governance, "!governance");
+        require(_pid < poolInfos.length, "!_pid");
+        if (_withUpdate) {
+            massUpdatePools();
+        }
+        totalAllocPointOther = totalAllocPointOther.sub(poolInfos[_pid].allocPointOther).add(_allocPointOther);
+        require(totalAllocPointOther > 0, "!totalAllocPointOther");
+        poolInfos[_pid].allocPointOther = _allocPointOther;
+    }
+
+    function addPool(address _lpToken, uint256 _allocPoint, uint256 _allocPointOther, bool _withUpdate) public {
         require(msg.sender == governance, "!governance");
         uint256 length = poolInfos.length;
         for (uint256 i = 0; i < length; i++) {
@@ -152,15 +191,17 @@ contract MasterChef {
                 lpToken: IERC20(_lpToken),
                 amount: 0,
                 allocPoint: _allocPoint,
+                allocPointOther: _allocPointOther,
                 lastRewardTime: _lastRewardTime,
-                accTokenPerShare: 0
+                accTokenPerShare: 0,
+                accTokenPerShareOther: 0
             })
         );
     }
 
-    function getReward(uint256 _from, uint256 _to) public view returns (uint256) {
+    function getReward(uint256 _from, uint256 _to) public view returns (uint256, uint256) {
         if (_to <= startTime || _from >= endTime) {
-            return 0;
+            return (0, 0);
         }
 
         if (_from < startTime) {
@@ -172,22 +213,31 @@ contract MasterChef {
         }
         require(_from < _to, "!_from < _to");
 
-        return _to.sub(_from).mul(reward).div(period);
+        return (_to.sub(_from).mul(reward).div(period), _to.sub(_from).mul(rewardOther).div(period));
     }
 
     // View function to see pending Token on frontend.
-    function pendingToken(uint256 _pid, address _user) external view returns (uint256) {
+    function pendingToken(uint256 _pid, address _user) external view returns (uint256, uint256) {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][_user];
-        uint256 accTokenPerShare = pool.accTokenPerShare;
-        uint256 lpSupply = pool.amount;
-        if (block.timestamp > startTime && pool.lastRewardTime < endTime && block.timestamp > pool.lastRewardTime && lpSupply != 0) {
-            uint256 rewardTokenReward =  getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
-            accTokenPerShare = accTokenPerShare.add(rewardTokenReward.mul(1e18).div(lpSupply));
+        uint256 _accTokenPerShare = pool.accTokenPerShare;
+        uint256 _accTokenPerShareOther = pool.accTokenPerShareOther;
+        uint256 _lpSupply = pool.amount;
+        if (block.timestamp > startTime && pool.lastRewardTime < endTime && block.timestamp > pool.lastRewardTime && _lpSupply != 0) {
+            (uint256 _rewardAmount, uint256 _rewardAmountOther)=  getReward(pool.lastRewardTime, block.timestamp);
+            if (_rewardAmount > 0) {
+                _rewardAmount = _rewardAmount.mul(pool.allocPoint).div(totalAllocPoint);
+                _accTokenPerShare = _accTokenPerShare.add(_rewardAmount.mul(1e18).div(_lpSupply));
+            }
+            if (_rewardAmountOther > 0) {
+                _rewardAmountOther = _rewardAmount.mul(pool.allocPointOther).div(totalAllocPointOther);
+                _accTokenPerShareOther = _accTokenPerShareOther.add(_rewardAmountOther.mul(1e18).div(_lpSupply));
+            }
         }
-        uint256 _reward = user.amount.mul(accTokenPerShare).div(1e18).sub(user.rewardDebt);
-        return user.reward.add(_reward);
+        uint256 _reward = user.amount.mul(_accTokenPerShare).div(1e18).sub(user.rewardDebt);
+        uint256 _rewardOther = user.amount.mul(_accTokenPerShareOther).div(1e18).sub(user.rewardDebtOther);
+        return (user.reward.add(_reward), user.rewardOther.add(_rewardOther));
     }
 
     // Update reward vairables for all pools. Be careful of gas spending!
@@ -216,14 +266,21 @@ contract MasterChef {
             return;
         }
 
-        uint256 lpSupply = pool.amount;
-        if (lpSupply == 0) {
+        uint256 _lpSupply = pool.amount;
+        if (_lpSupply == 0) {
             pool.lastRewardTime = block.timestamp;
             return;
         }
 
-        uint256 rewardTokenReward = getReward(pool.lastRewardTime, block.timestamp).mul(pool.allocPoint).div(totalAllocPoint);
-        pool.accTokenPerShare = pool.accTokenPerShare.add(rewardTokenReward.mul(1e18).div(lpSupply));
+        (uint256 _rewardAmount, uint256 _rewardAmountOther) = getReward(pool.lastRewardTime, block.timestamp);
+        if (_rewardAmount > 0) {
+            _rewardAmount = _rewardAmount.mul(pool.allocPoint).div(totalAllocPoint);
+            pool.accTokenPerShare = pool.accTokenPerShare.add(_rewardAmount.mul(1e18).div(_lpSupply));
+        }
+        if (_rewardAmountOther > 0) {
+            _rewardAmountOther = _rewardAmountOther.mul(pool.allocPointOther).div(totalAllocPointOther);
+            pool.accTokenPerShareOther = pool.accTokenPerShareOther.add(_rewardAmountOther.mul(1e18).div(_lpSupply));
+        }
         pool.lastRewardTime = block.timestamp;
     }
 
@@ -235,11 +292,14 @@ contract MasterChef {
         if (user.amount > 0) {
             uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
             user.reward = _reward.add(user.reward);
+            uint256 _rewardOther = user.amount.mul(pool.accTokenPerShareOther).div(1e18).sub(user.rewardDebtOther);
+            user.rewardOther = _rewardOther.add(user.rewardOther);
         }
         pool.lpToken.safeTransferFrom(msg.sender, address(this), _amount);
         user.depositTime = block.timestamp;
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
+        user.rewardDebtOther = user.amount.mul(pool.accTokenPerShareOther).div(1e18);
         pool.amount = pool.amount.add(_amount);
         emit Deposit(msg.sender, _pid, _amount);
     }
@@ -253,8 +313,11 @@ contract MasterChef {
         updatePool(_pid);
         uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
         user.reward = _reward.add(user.reward);
+        uint256 _rewardOther = user.amount.mul(pool.accTokenPerShareOther).div(1e18).sub(user.rewardDebtOther);
+        user.rewardOther = _rewardOther.add(user.rewardOther);
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
+        user.rewardDebtOther = user.amount.mul(pool.accTokenPerShareOther).div(1e18);
         pool.amount = pool.amount.sub(_amount);
         pool.lpToken.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _pid, _amount);
@@ -268,9 +331,13 @@ contract MasterChef {
         uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
         _reward = _reward.add(user.reward);
         user.reward = 0;
-        safeTokenTransfer(msg.sender, _reward);
+        uint256 _rewardOther = user.amount.mul(pool.accTokenPerShareOther).div(1e18).sub(user.rewardDebtOther);
+        _rewardOther = _rewardOther.add(user.rewardOther);
+        user.rewardOther = 0;
+        safeTokenTransfer(msg.sender, _reward, _rewardOther);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
-        emit Harvest(msg.sender, _pid, _reward);
+        user.rewardDebtOther = user.amount.mul(pool.accTokenPerShareOther).div(1e18);
+        emit Harvest(msg.sender, _pid, _reward, _rewardOther);
     }
 
     function withdrawAndHarvest(uint256 _pid, uint256 _amount) public {
@@ -283,13 +350,17 @@ contract MasterChef {
         uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
         _reward = _reward.add(user.reward);
         user.reward = 0;
-        safeTokenTransfer(msg.sender, _reward);
+        uint256 _rewardOther = user.amount.mul(pool.accTokenPerShareOther).div(1e18).sub(user.rewardDebtOther);
+        _rewardOther = _rewardOther.add(user.rewardOther);
+        user.rewardOther = 0;
+        safeTokenTransfer(msg.sender, _reward, _rewardOther);
         user.amount = user.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
+        user.rewardDebtOther = user.amount.mul(pool.accTokenPerShareOther).div(1e18);
         pool.amount = pool.amount.sub(_amount);
         pool.lpToken.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _pid, _amount);
-        emit Harvest(msg.sender, _pid, _reward);
+        emit Harvest(msg.sender, _pid, _reward, _rewardOther);
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
@@ -301,20 +372,35 @@ contract MasterChef {
         uint256 _amount = user.amount;
         user.amount = 0;
         user.rewardDebt = 0;
+        user.reward = 0;
+        user.rewardDebtOther = 0;
+        user.rewardOther = 0;
         pool.amount = pool.amount.sub(_amount);
         pool.lpToken.safeTransfer(msg.sender, _amount);
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
     }
 
     // Safe rewardToken transfer function, just in case if rounding error causes pool to not have enough Token.
-    function safeTokenTransfer(address _to, uint256 _amount) internal {
-        uint256 _balance = rewardToken.balanceOf(address(this));
-        if (_amount > _balance) {
-            totalGain = totalGain.add(_balance);
-            rewardToken.safeTransfer(_to, _balance);
-        } else {
-            totalGain = totalGain.add(_amount);
-            rewardToken.safeTransfer(_to, _amount);
+    function safeTokenTransfer(address _to, uint256 _amount, uint256 _amountOther) internal {
+        if (_amount > 0) {
+            uint256 _balance = rewardToken.balanceOf(address(this));
+            if (_amount > _balance) {
+                totalGain = totalGain.add(_balance);
+                rewardToken.safeTransfer(_to, _balance);
+            } else {
+                totalGain = totalGain.add(_amount);
+                rewardToken.safeTransfer(_to, _amount);
+            }
+        }
+        if (_amountOther > 0) {
+            uint256 _balanceOther = rewardTokenOther.balanceOf(address(this));
+            if (_amountOther > _balanceOther) {
+                totalGainOther = totalGainOther.add(_balanceOther);
+                rewardTokenOther.safeTransfer(_to, _balanceOther);
+            } else {
+                totalGainOther = totalGainOther.add(_amountOther);
+                rewardTokenOther.safeTransfer(_to, _amountOther);
+            }
         }
     }
 
@@ -346,6 +432,7 @@ contract MasterChef {
     function sweep(address _token) public {
         require(msg.sender == governance, "!governance");
         require(_token != address(rewardToken), "!_token");
+        require(_token != address(rewardTokenOther), "!_token");
         uint256 length = poolInfos.length;
         for (uint256 i = 0; i < length; i++) {
             require(_token != address(poolInfos[i].lpToken), "!_token");
