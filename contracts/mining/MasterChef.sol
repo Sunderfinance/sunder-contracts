@@ -25,6 +25,7 @@ contract MasterChef {
         uint256 lastRewardTime; // Last block number that Token distribution occurs.
         uint256 allocPoint; // How many allocation points assigned to this pool. Token to distribute per block.
         uint256 accTokenPerShare; // Accumulated Token per share, times 1e18. See below.
+        address owner;
         address rewardToken;
         uint256 totalReward;
         uint256 epochId;
@@ -40,6 +41,7 @@ contract MasterChef {
     address public guardian;
     uint256 public guardianTime;
     uint256 public MaxStartLeadTime;
+    uint256 public MaxPeriod;
 
     IERC20  public rewardToken;
     uint256 public totalReward;
@@ -75,13 +77,14 @@ contract MasterChef {
     event EmergencyWithdraw(address indexed user, uint256 indexed pid,  uint256 amount);
     event SetLpReward(uint256 indexed pid, uint256 indexed epochId, uint256 startTime, uint256 period, uint256 reward);
 
-    constructor(address _rewardToken, uint256 _intervalTime, uint256 _maxStartLeadTime) public {
+    constructor(address _rewardToken, uint256 _maxStartLeadTime, uint256 _maxPeriod, uint256 _intervalTime) public {
         rewardToken = IERC20(_rewardToken);
-        intervalTime = _intervalTime;
         governance = msg.sender;
         guardian = msg.sender;
-        guardianTime = block.timestamp + 30 days;
         MaxStartLeadTime = _maxStartLeadTime;
+        MaxPeriod = _maxPeriod;
+        intervalTime = _intervalTime;
+        guardianTime = block.timestamp + 30 days;
     }
 
     function setGuardian(address _guardian) public {
@@ -118,7 +121,7 @@ contract MasterChef {
         poolInfos[_pid].allocPoint = _allocPoint;
     }
 
-    function addPool(address _lpToken, uint256 _allocPoint, address _rewardToken, bool _withUpdate) public {
+    function addPool(address _lpToken, address _owner, uint256 _allocPoint, bool _withUpdate) public {
         require(msg.sender == governance, "!governance");
         uint256 length = poolInfos.length;
         for (uint256 i = 0; i < length; i++) {
@@ -136,7 +139,8 @@ contract MasterChef {
                 lastRewardTime: block.timestamp,
                 allocPoint: _allocPoint,
                 accTokenPerShare: 0,
-                rewardToken: _rewardToken,
+                owner: _owner,
+                rewardToken: address(0),
                 totalReward: 0,
                 epochId: 0,
                 reward: 0,
@@ -149,10 +153,11 @@ contract MasterChef {
     }
 
     function setRewardToken(uint256 _pid, address _rewardToken) public {
-        require(msg.sender == governance, "!governance");
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
+        require(msg.sender == pool.owner || msg.sender == governance, "!pool.owner");
         require(pool.rewardToken == address(0), "!pool.rewardToken");
+
         pool.rewardToken = _rewardToken;
     }
 
@@ -160,8 +165,9 @@ contract MasterChef {
         require(msg.sender == governance, "!governance");
         require(endTime < block.timestamp, "!endTime");
         require(block.timestamp <= _startTime, "!_startTime");
-        require(_startTime <= block.timestamp + MaxStartLeadTime, "!_startTime");
+        require(_startTime <= block.timestamp + MaxStartLeadTime, "!_startTime MaxStartLeadTime");
         require(_period > 0, "!_period");
+        require(_period <= MaxPeriod, "!_period MaxPeriod");
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -184,19 +190,19 @@ contract MasterChef {
     }
 
     function setLpReward(uint256 _pid, uint256 _startTime, uint256 _period, uint256 _reward) public {
-        require(msg.sender == governance, "!governance");
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
+        require(msg.sender == pool.owner || msg.sender == governance, "!pool.owner");
+
         require(pool.rewardToken != address(0), "!pool.rewardToken");
         require(pool.endTime < block.timestamp, "!endTime");
         require(block.timestamp <= _startTime, "!_startTime");
-        require(_startTime <= block.timestamp + MaxStartLeadTime, "!_startTime");
+        require(_startTime <= block.timestamp + MaxStartLeadTime, "!_startTime MaxStartLeadTime");
         require(_period > 0, "!_period");
+        require(_period <= MaxPeriod, "!_period MaxPeriod");
 
         updatePool(_pid);
-
-        uint256 _balance = IERC20(pool.rewardToken).balanceOf(address(this));
-        require(_balance >= _reward, "!_reward");
+        IERC20(pool.rewardToken).safeTransferFrom(msg.sender, address(this), _reward);
 
         pool.totalReward = pool.totalReward.add(_reward);
         pool.epochId++;
@@ -290,15 +296,17 @@ contract MasterChef {
     function _updateRewardPerShare(uint256 _pid) internal {
         PoolInfo storage pool = poolInfos[_pid];
         uint256 _lastRewardTime = pool.lastRewardTime;
+
         if (block.timestamp <= _lastRewardTime) {
-            return;
-        }
-        if (block.timestamp <= pool.startTime) {
             return;
         }
         if (_lastRewardTime >= pool.endTime) {
             return;
         }
+        if (block.timestamp <= pool.startTime) {
+            return;
+        }
+
         uint256 _lpSupply = pool.amount;
         if (_lpSupply == 0) {
             return;
@@ -319,10 +327,10 @@ contract MasterChef {
             return;
         }
         pool.lastRewardTime = block.timestamp;
-        if (block.timestamp <= startTime) {
+        if (_lastRewardTime >= endTime) {
             return;
         }
-        if (_lastRewardTime >= endTime) {
+        if (block.timestamp <= startTime) {
             return;
         }
         uint256 _lpSupply = pool.amount;
