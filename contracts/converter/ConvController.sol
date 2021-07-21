@@ -156,9 +156,9 @@ contract ConvController {
         unlocked = false;
         require(dtokens[_token] == address(0), "!address(0)");
 
-        bytes memory _nameD = abi.encodePacked("dToken ", ERC20(_token).name());
+        bytes memory _nameD = abi.encodePacked(ERC20(_token).symbol(), " dToken");
         bytes memory _symbolD = abi.encodePacked("d", ERC20(_token).symbol());
-        bytes memory _nameE = abi.encodePacked("eToken ", ERC20(_token).name());
+        bytes memory _nameE = abi.encodePacked(ERC20(_token).symbol(), " eToken");
         bytes memory _symbolE = abi.encodePacked("e", ERC20(_token).symbol());
         uint8 _decimals = ERC20(_token).decimals();
 

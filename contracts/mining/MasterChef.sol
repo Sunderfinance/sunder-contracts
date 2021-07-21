@@ -152,13 +152,21 @@ contract MasterChef {
         );
     }
 
-    function setRewardToken(uint256 _pid, address _rewardToken) public {
+    function setLpRewardToken(uint256 _pid, address _rewardToken) public {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         require(msg.sender == pool.owner || msg.sender == governance, "!pool.owner");
         require(pool.rewardToken == address(0), "!pool.rewardToken");
 
         pool.rewardToken = _rewardToken;
+    }
+
+    function setLpOwner(uint256 _pid, address _owner) public {
+        require(_pid < poolInfos.length, "!_pid");
+        PoolInfo storage pool = poolInfos[_pid];
+        require(msg.sender == pool.owner || msg.sender == governance, "!pool.owner");
+
+        pool.owner = _owner;
     }
 
     function setReward(uint256 _startTime, uint256 _period, uint256 _reward, bool _withUpdate) public {
