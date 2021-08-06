@@ -38,21 +38,21 @@ contract SVault is ERC20 {
         harvestTime = block.timestamp;
     }
 
-    function acceptGovernance() public {
+    function acceptGovernance() external {
         require(msg.sender == pendingGovernance, "!pendingGovernance");
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-    function setPendingGovernance(address _pendingGovernance) public {
+    function setPendingGovernance(address _pendingGovernance) external {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-    function setController(address _controller) public {
+    function setController(address _controller) external {
         require(msg.sender == governance, "!governance");
         controller = _controller;
     }
 
-    function depositAll() public {
+    function depositAll() external {
         deposit(eToken.balanceOf(msg.sender));
     }
 
@@ -72,7 +72,7 @@ contract SVault is ERC20 {
         emit Deposit(msg.sender, _amount, _shares);
     }
 
-    function withdrawAll() public {
+    function withdrawAll() external {
         withdraw(balanceOf(msg.sender));
     }
 
@@ -104,7 +104,7 @@ contract SVault is ERC20 {
         return harvestReward.mul(31556952).mul(1e18).div(harvestPeriod).div(harvestBalance);
     }
 
-    function setHarvestInfo(uint256 _harvestReward) public {
+    function setHarvestInfo(uint256 _harvestReward) external {
         require(msg.sender == controller, "!controller");
         uint256 _harvestTime = block.timestamp;
         require(_harvestTime > harvestTime, "!_harvestTime");
@@ -114,7 +114,7 @@ contract SVault is ERC20 {
         harvestBalance = eTokenBalance();
     }
 
-    function sweep(address _token) public {
+    function sweep(address _token) external {
         require(msg.sender == governance, "!governance");
         require(address(eToken) != _token, "eToken = _token");
 

@@ -38,58 +38,58 @@ contract Controller {
         rewards = _rewards;
     }
 
-    function acceptGovernance() public {
+    function acceptGovernance() external {
         require(msg.sender == pendingGovernance, "!pendingGovernance");
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-    function setPendingGovernance(address _pendingGovernance) public {
+    function setPendingGovernance(address _pendingGovernance) external {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-    function setStrategist(address _strategist) public {
+    function setStrategist(address _strategist) external {
         require(msg.sender == governance, "!governance");
         strategist = _strategist;
     }
-    function setRewards(address _rewards) public {
+    function setRewards(address _rewards) external {
         require(msg.sender == governance, "!governance");
         rewards = _rewards;
     }
 
-    function setConvController(address _convController) public {
+    function setConvController(address _convController) external {
         require(msg.sender == governance, "!governance");
         convController = _convController;
     }
-    function setVoteController(address _voteController) public {
+    function setVoteController(address _voteController) external {
         require(msg.sender == governance, "!governance");
         voteController = _voteController;
     }
 
-    function setOneSplit(address _onesplit) public {
+    function setOneSplit(address _onesplit) external {
         require(msg.sender == governance, "!governance");
         onesplit = _onesplit;
     }
-    function setSplit(uint256 _split) public {
+    function setSplit(uint256 _split) external {
         require(msg.sender == governance, "!governance");
         require(_split <= max, "!_split");
         split = _split;
     }
 
-    function setVault(address _token, address _vault) public {
+    function setVault(address _token, address _vault) external {
         require(msg.sender == strategist || msg.sender == governance, "!strategist");
         require(vaults[_token] == address(0), "vault");
         vaults[_token] = _vault;
     }
 
-    function approveStrategy(address _token, address _strategy) public {
+    function approveStrategy(address _token, address _strategy) external {
         require(msg.sender == governance, "!governance");
         approvedStrategies[_token][_strategy] = true;
     }
-    function revokeStrategy(address _token, address _strategy) public {
+    function revokeStrategy(address _token, address _strategy) external {
         require(msg.sender == governance, "!governance");
         approvedStrategies[_token][_strategy] = false;
     }
-    function setStrategy(address _token, address _strategy) public {
+    function setStrategy(address _token, address _strategy) external {
         require(msg.sender == strategist || msg.sender == governance, "!strategist");
         require(approvedStrategies[_token][_strategy] == true, "!approved");
 
@@ -100,14 +100,14 @@ contract Controller {
         strategies[_token] = _strategy;
     }
 
-    function deposit(address _token, uint256 _amount) public {
+    function deposit(address _token, uint256 _amount) external {
         require(msg.sender == convController, "!convController");
         _deposit(_token, _amount);
         address _strategy = strategies[_token];
         IStrategy(_strategy).addDebt(_amount);
     }
 
-    function depositVote(address _token, uint256 _amount) public {
+    function depositVote(address _token, uint256 _amount) external {
         require(msg.sender == voteController, "!voteController");
         _deposit(_token, _amount);
     }
@@ -119,27 +119,27 @@ contract Controller {
         IERC20(_token).safeTransfer(_strategy, _amount);
     }
 
-    function withdraw(address _token, uint256 _amount) public {
+    function withdraw(address _token, uint256 _amount) external {
         require(msg.sender == convController, "!convController");
         IStrategy(strategies[_token]).withdraw(msg.sender, _amount);
     }
 
-    function withdrawVote(address _token, uint256 _amount) public {
+    function withdrawVote(address _token, uint256 _amount) external {
         require(msg.sender == voteController, "!voteController");
         IStrategy(strategies[_token]).withdrawVote(msg.sender, _amount);
     }
 
-    function withdrawAll(address _token) public {
+    function withdrawAll(address _token) external {
         require(msg.sender == strategist || msg.sender == governance, "!strategist");
         IStrategy(strategies[_token]).withdrawAll(convController);
     }
 
-    function inCaseTokensGetStuck(address _token, uint256 _amount) public {
+    function inCaseTokensGetStuck(address _token, uint256 _amount) external {
         require(msg.sender == strategist || msg.sender == governance, "!governance");
         IERC20(_token).safeTransfer(msg.sender, _amount);
     }
 
-    function inCaseStrategyTokenGetStuck(address _strategy, address _token) public {
+    function inCaseStrategyTokenGetStuck(address _strategy, address _token) external {
         require(msg.sender == strategist || msg.sender == governance, "!governance");
         IStrategy(_strategy).withdraw(_token);
     }
@@ -151,7 +151,7 @@ contract Controller {
     }
 
     // Only allows to withdraw non-core strategy tokens ~ this is over and above normal yield
-    function yearn(address _strategy, address _token, uint256 _parts) public {
+    function yearn(address _strategy, address _token, uint256 _parts) external {
         require(msg.sender == strategist || msg.sender == governance, "!governance");
         // This contract should never have value in it, but just incase since this is a public call
         uint256 _before = IERC20(_token).balanceOf(address(this));
@@ -176,12 +176,12 @@ contract Controller {
         }
     }
 
-    function mint(address _token, uint256 _amount) public {
+    function mint(address _token, uint256 _amount) external {
         require(msg.sender == strategies[_token], "!token strategies");
         IConvController(convController).mint(_token, msg.sender, _amount);
     }
 
-    function setHarvestInfo(address _token, uint256 _harvestReward) public {
+    function setHarvestInfo(address _token, uint256 _harvestReward) external {
         require(msg.sender == strategies[_token], "!token strategies");
         require(vaults[_token] != address(0), "!vault");
         ISVault(vaults[_token]).setHarvestInfo(_harvestReward);
