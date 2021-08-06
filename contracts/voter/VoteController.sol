@@ -34,46 +34,46 @@ contract VoteController {
         operator =  _operator;
     }
 
-    function acceptGovernance() public {
+    function acceptGovernance() external {
         require(msg.sender == pendingGovernance, "!pendingGovernance");
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-    function setPendingGovernance(address _pendingGovernance) public {
+    function setPendingGovernance(address _pendingGovernance) external {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-    function setController(address _controller) public {
+    function setController(address _controller) external {
         require(msg.sender == governance, "!governance");
         controller = _controller;
     }
-    function setOperator(address _operator) public {
+    function setOperator(address _operator) external {
         require(msg.sender == governance, "!governance");
         operator = _operator;
     }
-    function setGovernor(address _comp, address _governor) public {
+    function setGovernor(address _comp, address _governor) external {
         require(msg.sender == governance, "!governance");
         governors[_comp] = _governor;
     }
 
-    function setAgainst(address _comp, address _against) public {
+    function setAgainst(address _comp, address _against) external {
         require(msg.sender == governance, "!governance");
         againsts[_comp] = _against;
     }
-    function setFor(address _comp, address _for) public {
+    function setFor(address _comp, address _for) external {
         require(msg.sender == governance, "!governance");
         fors[_comp] = _for;
     }
-    function setAbstain(address _comp, address _abstain) public {
+    function setAbstain(address _comp, address _abstain) external {
         require(msg.sender == governance, "!governance");
         abstains[_comp] = _abstain;
     }
-    function setPropose(address _comp, address _propose) public {
+    function setPropose(address _comp, address _propose) external {
         require(msg.sender == governance, "!governance");
         proposes[_comp] = _propose;
     }
 
-    function prepareVote(address _comp, uint256 _proposalId, uint256 _against, uint256 _for, uint256 _abstain) public {
+    function prepareVote(address _comp, uint256 _proposalId, uint256 _against, uint256 _for, uint256 _abstain) external {
         require(msg.sender == operator || msg.sender == governance, "!operator");
         require(proposalIds[_comp] == 0, "!proposalId");
         // require(types[_comp] == 0, "!types");
@@ -111,7 +111,7 @@ contract VoteController {
         IERC20(_comp).safeTransfer(_vote, _amount);
     }
 
-    function returnToken(address _comp, uint256 _proposalId) public {
+    function returnToken(address _comp, uint256 _proposalId) external {
         require(msg.sender == operator || msg.sender == governance, "!operator");
         require(proposalIds[_comp] == _proposalId, "!proposalId");
         uint8 _type = types[_comp];
@@ -141,7 +141,7 @@ contract VoteController {
         IController(controller).depositVote(_comp, _totalAmount);
     }
 
-    function castVote(address _comp, uint256 _proposalId) public {
+    function castVote(address _comp, uint256 _proposalId) external {
         require(msg.sender == operator || msg.sender == governance, "!operator");
         require(voteProposalIds[_comp] == _proposalId, "!proposalId");
         uint8 _type = types[_comp];
@@ -166,22 +166,22 @@ contract VoteController {
         }
     }
 
-    function totalAssets(address _token) public view returns (uint256) {
+    function totalAssets(address _token) external view returns (uint256) {
         return IController(controller).totalAssets(_token);
     }
 
-    function state(address _comp, uint256 _proposalId) public view returns (uint8){
+    function state(address _comp, uint256 _proposalId) external view returns (uint8){
         address _vote = fors[_comp];
         return IVote(_vote).state(_comp, _proposalId);
     }
 
-    function proposals(address _comp, uint256 _proposalId) public view returns (uint256 _id, address _proposer,
+    function proposals(address _comp, uint256 _proposalId) external view returns (uint256 _id, address _proposer,
         uint256 _eta, uint256 _startBlock, uint256 _endBlock, uint256 _forVotes, uint256 _againstVotes, uint256 _abstainVotes, bool _canceled, bool _executed){
         address _vote = fors[_comp];
         return IVote(_vote).proposals(_comp, _proposalId);
     }
 
-    function sweep(address _token) public {
+    function sweep(address _token) external {
         require(msg.sender == governance, "!governance");
 
         uint256 _balance = IERC20(_token).balanceOf(address(this));
@@ -189,17 +189,17 @@ contract VoteController {
         IERC20(_token).safeTransfer(_rewards, _balance);
     }
 
-    function setProposalId(address _comp, uint256 _proposalId) public {
+    function setProposalId(address _comp, uint256 _proposalId) external {
         require(msg.sender == governance, "!governance");
         proposalIds[_comp] = _proposalId;
     }
 
-    function setType(address _comp, uint8 _type) public {
+    function setType(address _comp, uint8 _type) external {
         require(msg.sender == governance, "!governance");
         types[_comp] = _type;
     }
 
-    function prepareProposeByAdmin(address _comp) public{
+    function prepareProposeByAdmin(address _comp) external {
         require(msg.sender == governance, "!governance");
 
         address _vote = proposes[_comp];
@@ -208,14 +208,14 @@ contract VoteController {
         _tranferVote(_comp, _vote, _amount);
     }
 
-    function proposeByAdmin(address _comp, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public {
+    function proposeByAdmin(address _comp, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256) {
         require(msg.sender == governance, "!operator");
 
         address _vote = proposes[_comp];
-        IVote(_vote).propose(_comp, targets, values, signatures, calldatas, description);
+        return IVote(_vote).propose(_comp, targets, values, signatures, calldatas, description);
     }
 
-    function returnProposeByAdmin(address _comp) public {
+    function returnProposeByAdmin(address _comp) external {
         require(msg.sender == governance, "!operator");
 
         address _vote = proposes[_comp];
@@ -223,7 +223,7 @@ contract VoteController {
         IController(controller).depositVote(_comp, _amount);
     }
 
-    function prepareVoteByAdmin(address _comp, uint256 _proposalId, uint256 _against, uint256 _for, uint256 _abstain) public {
+    function prepareVoteByAdmin(address _comp, uint256 _against, uint256 _for, uint256 _abstain) external {
         require(msg.sender == governance, "!governance");
 
         uint256 _amount = _for.add(_against).add(_abstain);
@@ -243,7 +243,7 @@ contract VoteController {
         }
     }
 
-    function returnTokenByAdmin(address _comp) public {
+    function returnTokenByAdmin(address _comp) external {
         require(msg.sender == governance, "!governance");
 
         address _vote = againsts[_comp];
@@ -260,7 +260,7 @@ contract VoteController {
         IController(controller).depositVote(_comp, _totalAmount);
     }
 
-    function voteByAdmin(address _comp, uint256 _proposalId) public {
+    function voteByAdmin(address _comp, uint256 _proposalId) external {
         require(msg.sender == governance, "!governance");
 
         address _vote = againsts[_comp];

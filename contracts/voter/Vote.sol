@@ -24,21 +24,21 @@ contract Vote {
         support = _support;
     }
 
-    function acceptGovernance() public {
+    function acceptGovernance() external {
         require(msg.sender == pendingGovernance, "!pendingGovernance");
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-    function setPendingGovernance(address _pendingGovernance) public {
+    function setPendingGovernance(address _pendingGovernance) external {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-    function setVoteController(address _voteController) public {
+    function setVoteController(address _voteController) external {
         require(msg.sender == governance, "!governance");
         voteController = _voteController;
     }
 
-    function delegate(address _comp) public {
+    function delegate(address _comp) external {
         IComp(_comp).delegate(address(this));
     }
 
@@ -48,14 +48,14 @@ contract Vote {
         IERC20(_comp).safeTransfer(_receiver, _amount);
     }
 
-    function castVote(address _comp, uint256 _proposalId) public {
+    function castVote(address _comp, uint256 _proposalId) external {
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
         address governor = IVoteController(voteController).governors(_comp);
         require(governor != address(0), "!governor");
         IGovernorDelegate(governor).castVote(_proposalId, support);
     }
 
-    function propose(address _comp, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256){
+    function propose(address _comp, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256){
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
         address governor = IVoteController(voteController).governors(_comp);
         require(governor != address(0), "!governor");
