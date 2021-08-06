@@ -87,32 +87,33 @@ contract MasterChef {
         guardianTime = block.timestamp + 30 days;
     }
 
-    function setGuardian(address _guardian) public {
+    function setGuardian(address _guardian) external {
         require(msg.sender == guardian, "!guardian");
         guardian = _guardian;
     }
-    function addGuardianTime(uint256 _addTime) public {
+    function addGuardianTime(uint256 _addTime) external {
         require(msg.sender == guardian || msg.sender == pendingGovernance, "!guardian");
         guardianTime = guardianTime.add(_addTime);
     }
 
-    function acceptGovernance() public {
+    function acceptGovernance() external {
         require(msg.sender == pendingGovernance, "!pendingGovernance");
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-    function setPendingGovernance(address _pendingGovernance) public {
+    function setPendingGovernance(address _pendingGovernance) external {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
 
-    function setIntervalTime(uint256 _intervalTime) public {
+    function setIntervalTime(uint256 _intervalTime) external {
         require(msg.sender == governance, "!governance");
         intervalTime = _intervalTime;
     }
-    function setAllocPoint(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public {
+    function setAllocPoint(uint256 _pid, uint256 _allocPoint, bool _withUpdate) external {
         require(msg.sender == governance, "!governance");
         require(_pid < poolInfos.length, "!_pid");
+
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -121,8 +122,9 @@ contract MasterChef {
         poolInfos[_pid].allocPoint = _allocPoint;
     }
 
-    function addPool(address _lpToken, address _owner, uint256 _allocPoint, bool _withUpdate) public {
+    function addPool(address _lpToken, address _owner, uint256 _allocPoint, bool _withUpdate) external {
         require(msg.sender == governance, "!governance");
+
         uint256 length = poolInfos.length;
         for (uint256 i = 0; i < length; i++) {
             require(_lpToken != address(poolInfos[i].lpToken), "!_lpToken");
@@ -152,30 +154,29 @@ contract MasterChef {
         );
     }
 
-    function setLpRewardToken(uint256 _pid, address _rewardToken) public {
+    function setLpRewardToken(uint256 _pid, address _rewardToken) external {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         require(msg.sender == pool.owner || msg.sender == governance, "!pool.owner");
         require(pool.rewardToken == address(0), "!pool.rewardToken");
-
         pool.rewardToken = _rewardToken;
     }
 
-    function setLpOwner(uint256 _pid, address _owner) public {
+    function setLpOwner(uint256 _pid, address _owner) external {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         require(msg.sender == pool.owner || msg.sender == governance, "!pool.owner");
-
         pool.owner = _owner;
     }
 
-    function setReward(uint256 _startTime, uint256 _period, uint256 _reward, bool _withUpdate) public {
+    function setReward(uint256 _startTime, uint256 _period, uint256 _reward, bool _withUpdate) external {
         require(msg.sender == governance, "!governance");
         require(endTime < block.timestamp, "!endTime");
         require(block.timestamp <= _startTime, "!_startTime");
         require(_startTime <= block.timestamp + MaxStartLeadTime, "!_startTime MaxStartLeadTime");
         require(_period > 0, "!_period");
         require(_period <= MaxPeriod, "!_period MaxPeriod");
+
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -197,7 +198,7 @@ contract MasterChef {
         });
     }
 
-    function setLpReward(uint256 _pid, uint256 _startTime, uint256 _period, uint256 _reward) public {
+    function setLpReward(uint256 _pid, uint256 _startTime, uint256 _period, uint256 _reward) external {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         require(msg.sender == pool.owner || msg.sender == governance, "!pool.owner");
@@ -301,29 +302,6 @@ contract MasterChef {
         }
     }
 
-    function _updateRewardPerShare(uint256 _pid) internal {
-        PoolInfo storage pool = poolInfos[_pid];
-        uint256 _lastRewardTime = pool.lastRewardTime;
-
-        if (block.timestamp <= _lastRewardTime) {
-            return;
-        }
-        if (_lastRewardTime >= pool.endTime) {
-            return;
-        }
-        if (block.timestamp <= pool.startTime) {
-            return;
-        }
-
-        uint256 _lpSupply = pool.amount;
-        if (_lpSupply == 0) {
-            return;
-        }
-        uint256 _rewardAmount = getLpReward(_pid, _lastRewardTime, block.timestamp);
-        if (_rewardAmount > 0) {
-            pool.accRewardTokenPerShare = pool.accRewardTokenPerShare.add(_rewardAmount.mul(1e18).div(_lpSupply));
-        }
-    }
     // Update reward variables of the given pool to be up-to-date.
     function updatePool(uint256 _pid) public {
         require(_pid < poolInfos.length, "!_pid");
@@ -353,7 +331,31 @@ contract MasterChef {
         }
     }
 
-    function deposit(uint256 _pid, uint256 _amount) public {
+    function _updateRewardPerShare(uint256 _pid) internal {
+        PoolInfo storage pool = poolInfos[_pid];
+        uint256 _lastRewardTime = pool.lastRewardTime;
+
+        if (block.timestamp <= _lastRewardTime) {
+            return;
+        }
+        if (_lastRewardTime >= pool.endTime) {
+            return;
+        }
+        if (block.timestamp <= pool.startTime) {
+            return;
+        }
+
+        uint256 _lpSupply = pool.amount;
+        if (_lpSupply == 0) {
+            return;
+        }
+        uint256 _rewardAmount = getLpReward(_pid, _lastRewardTime, block.timestamp);
+        if (_rewardAmount > 0) {
+            pool.accRewardTokenPerShare = pool.accRewardTokenPerShare.add(_rewardAmount.mul(1e18).div(_lpSupply));
+        }
+    }
+
+    function deposit(uint256 _pid, uint256 _amount) external {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
@@ -367,13 +369,13 @@ contract MasterChef {
         pool.lpToken.safeTransferFrom(msg.sender, address(this), _amount);
         user.depositTime = block.timestamp;
         user.amount = user.amount.add(_amount);
+        pool.amount = pool.amount.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         user.rewardDebtLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18);
-        pool.amount = pool.amount.add(_amount);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-    function withdraw(uint256 _pid, uint256 _amount) public {
+    function withdraw(uint256 _pid, uint256 _amount) external {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
@@ -384,15 +386,16 @@ contract MasterChef {
         user.reward = _reward.add(user.reward);
         uint256 _rewardLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18).sub(user.rewardDebtLp);
         user.rewardLp = _rewardLp.add(user.rewardLp);
+
         user.amount = user.amount.sub(_amount);
+        pool.amount = pool.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         user.rewardDebtLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18);
-        pool.amount = pool.amount.sub(_amount);
         pool.lpToken.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
-    function harvest(uint256 _pid) public{
+    function harvest(uint256 _pid) external {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
@@ -403,14 +406,15 @@ contract MasterChef {
         uint256 _rewardLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18).sub(user.rewardDebtLp);
         _rewardLp = _rewardLp.add(user.rewardLp);
         user.rewardLp = 0;
-        address _rewardToken = pool.rewardToken;
-        safeTokenTransfer(msg.sender, _reward, _rewardToken, _rewardLp);
+
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         user.rewardDebtLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18);
+        address _rewardToken = pool.rewardToken;
+        safeTokenTransfer(msg.sender, _reward, _rewardToken, _rewardLp);
         emit Harvest(msg.sender, _pid, _reward, _rewardToken, _rewardLp);
     }
 
-    function withdrawAndHarvest(uint256 _pid, uint256 _amount) public {
+    function withdrawAndHarvest(uint256 _pid, uint256 _amount) external {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
@@ -423,29 +427,33 @@ contract MasterChef {
         uint256 _rewardLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18).sub(user.rewardDebtLp);
         _rewardLp = _rewardLp.add(user.rewardLp);
         user.rewardLp = 0;
-        address _rewardToken = pool.rewardToken;
-        safeTokenTransfer(msg.sender, _reward, _rewardToken, _rewardLp);
+
         user.amount = user.amount.sub(_amount);
+        pool.amount = pool.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         user.rewardDebtLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18);
-        pool.amount = pool.amount.sub(_amount);
+
+        address _rewardToken = pool.rewardToken;
+        safeTokenTransfer(msg.sender, _reward, _rewardToken, _rewardLp);
+
         pool.lpToken.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _pid, _amount);
         emit Harvest(msg.sender, _pid, _reward, _rewardToken, _rewardLp);
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public {
+    function emergencyWithdraw(uint256 _pid) external {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
         require(block.timestamp >= user.depositTime + 1, "!intervalTime"); // prevent flash loan
+
+        user.reward = 0;
+        user.rewardLp = 0;
+        user.rewardDebt = 0;
+        user.rewardDebtLp = 0;
         uint256 _amount = user.amount;
         user.amount = 0;
-        user.rewardDebt = 0;
-        user.reward = 0;
-        user.rewardDebtLp = 0;
-        user.rewardLp = 0;
         pool.amount = pool.amount.sub(_amount);
         pool.lpToken.safeTransfer(msg.sender, _amount);
         emit EmergencyWithdraw(msg.sender, _pid, _amount);
@@ -499,7 +507,7 @@ contract MasterChef {
         return (_annual.mul(1e18).div(pool.amount), _annualLp.mul(1e18).div(pool.amount));
     }
 
-    function sweepGuardian(address _token) public {
+    function sweepGuardian(address _token) external {
         require(msg.sender == guardian, "!guardian");
         require(block.timestamp > guardianTime, "!guardianTime");
 
@@ -507,7 +515,7 @@ contract MasterChef {
         IERC20(_token).safeTransfer(governance, _balance);
     }
 
-    function sweep(address _token) public {
+    function sweep(address _token) external {
         require(msg.sender == governance, "!governance");
         require(_token != address(rewardToken), "!_token");
         uint256 length = poolInfos.length;
@@ -520,7 +528,7 @@ contract MasterChef {
         IERC20(_token).safeTransfer(governance, _balance);
     }
 
-    function sweepLpToken(uint256 _pid) public {
+    function sweepLpToken(uint256 _pid) external {
         require(msg.sender == governance, "!governance");
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
