@@ -179,23 +179,23 @@ contract DToken {
         emit AccountVotesChanged(account, oldVotes, newVotes);
     }
 
-    function acceptGovernance() public {
+    function acceptGovernance() external {
         require(msg.sender == pendingGovernance, "!pendingGovernance");
         governance = msg.sender;
         pendingGovernance = address(0);
     }
 
-    function setPendingGovernance(address _pendingGovernance) public {
+    function setPendingGovernance(address _pendingGovernance) external {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
 
-    function setConvController(address _convController) public {
+    function setConvController(address _convController) external {
         require(msg.sender == governance, "!governance");
         convController = _convController;
     }
 
-    function setVault(address _vault) public {
+    function setVault(address _vault) external {
         require(msg.sender == governance, "!governance");
         vault = _vault;
     }
@@ -248,7 +248,7 @@ contract DToken {
         return a - b;
     }
 
-    function sweep(address _token) public {
+    function sweep(address _token) external {
         require(msg.sender == governance, "!governance");
 
         uint256 _balance = IERC20(_token).balanceOf(address(this));
