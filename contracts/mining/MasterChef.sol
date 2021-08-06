@@ -359,13 +359,15 @@ contract MasterChef {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
+
         updatePool(_pid);
         if (user.amount > 0) {
             uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
-            user.reward = _reward.add(user.reward);
             uint256 _rewardLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18).sub(user.rewardDebtLp);
+            user.reward = _reward.add(user.reward);
             user.rewardLp = _rewardLp.add(user.rewardLp);
         }
+
         pool.lpToken.safeTransferFrom(msg.sender, address(this), _amount);
         user.depositTime = block.timestamp;
         user.amount = user.amount.add(_amount);
@@ -381,10 +383,11 @@ contract MasterChef {
         UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "!_amount");
         require(block.timestamp >= user.depositTime + intervalTime, "!intervalTime");
+
         updatePool(_pid);
         uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
-        user.reward = _reward.add(user.reward);
         uint256 _rewardLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18).sub(user.rewardDebtLp);
+        user.reward = _reward.add(user.reward);
         user.rewardLp = _rewardLp.add(user.rewardLp);
 
         user.amount = user.amount.sub(_amount);
@@ -399,14 +402,15 @@ contract MasterChef {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
+
         updatePool(_pid);
         uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
-        _reward = _reward.add(user.reward);
-        user.reward = 0;
         uint256 _rewardLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18).sub(user.rewardDebtLp);
+        _reward = _reward.add(user.reward);
         _rewardLp = _rewardLp.add(user.rewardLp);
-        user.rewardLp = 0;
 
+        user.reward = 0;
+        user.rewardLp = 0;
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
         user.rewardDebtLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18);
         address _rewardToken = pool.rewardToken;
@@ -420,14 +424,15 @@ contract MasterChef {
         UserInfo storage user = userInfos[_pid][msg.sender];
         require(user.amount >= _amount, "!_amount");
         require(block.timestamp >= user.depositTime + intervalTime, "!intervalTime");
+
         updatePool(_pid);
         uint256 _reward = user.amount.mul(pool.accTokenPerShare).div(1e18).sub(user.rewardDebt);
-        _reward = _reward.add(user.reward);
-        user.reward = 0;
         uint256 _rewardLp = user.amount.mul(pool.accRewardTokenPerShare).div(1e18).sub(user.rewardDebtLp);
+        _reward = _reward.add(user.reward);
         _rewardLp = _rewardLp.add(user.rewardLp);
-        user.rewardLp = 0;
 
+        user.reward = 0;
+        user.rewardLp = 0;
         user.amount = user.amount.sub(_amount);
         pool.amount = pool.amount.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e18);
