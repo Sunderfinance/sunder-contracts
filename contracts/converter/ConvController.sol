@@ -44,44 +44,44 @@ contract ConvController {
         unlocked = true;
     }
 
-    function acceptGovernance() public {
+    function acceptGovernance() external {
         require(msg.sender == pendingGovernance, "!pendingGovernance");
         governance = msg.sender;
         pendingGovernance = address(0);
     }
-    function setPendingGovernance(address _pendingGovernance) public {
+    function setPendingGovernance(address _pendingGovernance) external {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-    function setController(address _controller) public {
+    function setController(address _controller) external {
         require(msg.sender == governance, "!governance");
         controller = _controller;
     }
-    function setReward(address _reward) public {
+    function setReward(address _reward) external {
         require(msg.sender == governance, "!governance");
         reward = _reward;
     }
 
-    function setOperator(address _operator) public {
+    function setOperator(address _operator) external {
         require(msg.sender == governance, "!governance");
         operator = _operator;
     }
-    function setWithdrawalFee(uint256 _withdrawalFee) public {
+    function setWithdrawalFee(uint256 _withdrawalFee) external {
         require(msg.sender == governance, "!governance");
         require(_withdrawalFee <= withdrawalMax, "!_withdrawalFee");
         withdrawalFee = _withdrawalFee;
     }
 
-    function locking(address _token) public {
+    function locking(address _token) external {
         require(msg.sender == operator || msg.sender == governance, "!operator");
         locks[_token] = true;
     }
-    function unlocking(address _token) public {
+    function unlocking(address _token) external {
         require(msg.sender == operator || msg.sender == governance, "!operator");
         locks[_token] = false;
     }
 
-    function convertAll(address _token) public {
+    function convertAll(address _token) external {
         convert(_token, IERC20(_token).balanceOf(msg.sender));
     }
 
@@ -104,7 +104,7 @@ contract ConvController {
         unlocked = true;
     }
 
-    function mint(address _token, address _minter, uint256 _amount) public {
+    function mint(address _token, address _minter, uint256 _amount) external {
         require(msg.sender == controller, "!controller");
         require(dtokens[_token] != address(0), "address(0)");
 
@@ -151,7 +151,7 @@ contract ConvController {
         unlocked = true;
     }
 
-    function createPair(address _token) external  returns (address _dtoken, address _etoken) {
+    function createPair(address _token) external returns (address _dtoken, address _etoken) {
         require(unlocked, "!unlock");
         unlocked = false;
         require(dtokens[_token] == address(0), "!address(0)");
@@ -212,17 +212,17 @@ contract ConvController {
         }
     }
 
-    function tokenLength() external view returns (uint256) {
+    function tokenLength() public view returns (uint256) {
         return tokens.length;
     }
 
-    function deposit(address _token) public {
+    function deposit(address _token) external {
         uint256 _balance = tokenBalance(_token);
         IERC20(_token).safeTransfer(controller, _balance);
         IController(controller).deposit(_token, _balance);
     }
 
-    function sweep(address _token) public {
+    function sweep(address _token) external {
         require(msg.sender == governance, "!governance");
         require(dtokens[_token] == address(0), "!address(0)");
 
