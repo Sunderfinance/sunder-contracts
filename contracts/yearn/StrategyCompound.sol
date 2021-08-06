@@ -24,57 +24,11 @@ contract StrategyCompound {
     uint256 public performanceFee = 500;
     uint256 constant public performanceMax = 10000;
 
-
     address constant public want  = address(0xc00e94Cb662C3520282E6f5717214004A7f26888); // mainnet comp
     address constant public cComp = address(0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4);
-    address constant public eToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // update address
-    address constant public dToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // update address
-    /*
-    address constant public want  = address(0xf76D4a441E4ba86A923ce32B89AFF89dBccAA075); // ropsten comp
-    address constant public cComp = address(0x70014768996439F71C041179Ffddce973a83EEf2);
-
-    */
-    // test begin
-    /*
-    address public want; // comp
-    address public cComp;
-    address public eToken;
-    address public dToken;
-    */
-    // test end
-
+    address constant public eToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
+    address constant public dToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
     ICompController constant public compController = ICompController(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
-    // ICompController constant public compController = ICompController(0xcfa7b0e37f5AC60f3ae25226F5e39ec59AD26152); // ropsten
-    // test
-    /*
-    function testAddress(address _want, address _eToken, address _dToken) public {
-        want = _want;
-        eToken = _eToken;
-        dToken = _dToken;
-        cComp = address(0x1201D1777654C65C052C4c401621625e173a357a);
-    }
-
-    function testHarvest() public {
-        require(msg.sender == strategist || msg.sender == governance, "!authorized");
-        uint256 _balance = balanceWant();
-        if (_balance > debt){
-            uint256 _amount = _balance - debt;
-            IController(controller).mint(address(want), _amount);
-            debt = _balance;
-            uint256 _fee = _amount.mul(performanceFee).div(performanceMax);
-            address _vault = IController(controller).vaults(want);
-            require(_vault != address(0), "address(0)");
-
-            uint256 _reward = _amount - _fee;
-            IERC20(eToken).safeTransfer(_vault, _reward);
-            IController(controller).setHarvestInfo(want, _reward);
-
-            IERC20(eToken).safeTransfer(IController(controller).rewards(), _fee);
-            IERC20(dToken).safeTransfer(IController(controller).rewards(), _amount);
-        }
-    }
-    */
-    //  test end
 
     constructor(address _controller) public {
         governance = msg.sender;
