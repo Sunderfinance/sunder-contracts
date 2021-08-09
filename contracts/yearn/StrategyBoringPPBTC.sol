@@ -19,11 +19,12 @@ contract StrategyBoringPPBTC {
     address public strategist;
 
     uint256 public debt;
+    bool public claim;
     uint256 public performanceFee = 500;
     uint256 constant public performanceMax = 10000;
 
-    address constant public want  = address(0x6C189Baa963060DAEEC77B7305b055216090bFC4); // Pledge Provider Token BTC
-    address constant public boring = address(0xBC19712FEB3a26080eBf6f2F7849b417FdD792CA); // BORING TOKEN
+    address constant public want       = address(0x6C189Baa963060DAEEC77B7305b055216090bFC4); // Pledge Provider Token BTC
+    address constant public boring     = address(0xBC19712FEB3a26080eBf6f2F7849b417FdD792CA); // BORING TOKEN
     address constant public boringChef = address(0x204c87CDA5DAAC87b2Fc562bFb5371a0B066229C); // BORING Chef
 
     constructor(address _controller) public {
@@ -52,6 +53,10 @@ contract StrategyBoringPPBTC {
     function setStrategist(address _strategist) external {
         require(msg.sender == strategist || msg.sender == governance, "!strategist");
         strategist = _strategist;
+    }
+    function setClaim(bool _claim) external {
+        require(msg.sender == strategist || msg.sender == governance, "!strategist");
+        claim = _claim;
     }
 
     function setPerformanceFee(uint256 _performanceFee) external {
@@ -117,17 +122,18 @@ contract StrategyBoringPPBTC {
 
     function harvest() external {
         require(msg.sender == strategist || msg.sender == governance, "!authorized");
-
-        uint256 _amount = pendingBoring();
-        if (_amount > 0) {
-            uint256 _balance = balanceWant();
-            if (_balance > 0) {
-                IERC20(want).safeApprove(boringChef, _balance);
+        if (claim) {
+            uint256 _amount = pendingBoring();
+            if (_amount > 0) {
+                uint256 _balance = balanceWant();
+                if (_balance > 0) {
+                    IERC20(want).safeApprove(boringChef, _balance);
+                }
+                IBoringChef(boringChef).deposit(0, _balance);
             }
-            IBoringChef(boringChef).deposit(0, _balance);
         }
 
-        _amount = balanceBoring();
+        uint256 _amount = balanceBoring();
         if (_amount > 0) {
             address _vault = IController(controller).vaults(want);
             require(_vault != address(0), "address(0)");
