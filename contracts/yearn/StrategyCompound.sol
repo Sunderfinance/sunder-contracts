@@ -54,11 +54,11 @@ contract StrategyCompound {
         controller = _controller;
     }
     function setStrategist(address _strategist) external {
-        require(msg.sender == governance, "!governance");
+        require(msg.sender == strategist || msg.sender == governance, "!strategist");
         strategist = _strategist;
     }
     function setClaim(bool _claim) external {
-        require(msg.sender == strategist || msg.sender == governance, "!authorized");
+        require(msg.sender == strategist || msg.sender == governance, "!strategist");
         claim = _claim;
     }
     function setPerformanceFee(uint256 _performanceFee) external {
