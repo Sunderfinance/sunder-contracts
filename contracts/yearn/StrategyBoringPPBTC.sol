@@ -123,14 +123,7 @@ contract StrategyBoringPPBTC {
     function harvest() external {
         require(msg.sender == strategist || msg.sender == governance, "!authorized");
         if (claim) {
-            uint256 _amount = pendingBoring();
-            if (_amount > 0) {
-                uint256 _balance = balanceWant();
-                if (_balance > 0) {
-                    IERC20(want).safeApprove(boringChef, _balance);
-                }
-                IBoringChef(boringChef).deposit(0, _balance);
-            }
+            IBoringChef(boringChef).deposit(0, 0);
         }
 
         uint256 _amount = balanceBoring();
