@@ -6,8 +6,9 @@ import "@openzeppelinV3/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelinV3/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelinV3/contracts/math/SafeMath.sol";
 
-import "../../interfaces/mining/IBoringChef.sol";
-import "../../interfaces/mining/IBoringDAO.sol";
+import "../../interfaces/boring/IBoringChef.sol";
+import "../../interfaces/boring/IBoringDAO.sol";
+import "../../interfaces/boring/IFeePool.sol";
 import "../../interfaces/yearn/IController.sol";
 
 contract StrategyBoringPPBTC2 {
@@ -32,6 +33,9 @@ contract StrategyBoringPPBTC2 {
     bytes32 constant public tunnelKey = "BTC";
     address constant public eToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
     address constant public dToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
+
+    address constant public feePool = address(0x2b781634e4cb0b5236cC957DABA88F911FD66fCD);  // BORING feePool
+    address constant public oBtc    = address(0x8064d9Ae6cDf087b1bcd5BDf3531bD5d8C537a68);  // BORING oBTC
 
     constructor(address _controller) public {
         governance = msg.sender;
@@ -156,6 +160,10 @@ contract StrategyBoringPPBTC2 {
             IController(controller).setHarvestInfo(want, _amount);
             IERC20(dToken).safeTransfer(IController(controller).rewards(), _amount);
         }
+    }
+
+    function claimFee() external {
+        IFeePool(feePool).claimFee();
     }
 
     function balanceWant() public view returns (uint256) {

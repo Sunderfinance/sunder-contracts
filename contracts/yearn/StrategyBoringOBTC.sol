@@ -6,7 +6,7 @@ import "@openzeppelinV3/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelinV3/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelinV3/contracts/math/SafeMath.sol";
 
-import "../../interfaces/mining/IBoringChef.sol";
+import "../../interfaces/boring/IBoringChef.sol";
 import "../../interfaces/yearn/IController.sol";
 
 contract StrategyBoringOBTC {
