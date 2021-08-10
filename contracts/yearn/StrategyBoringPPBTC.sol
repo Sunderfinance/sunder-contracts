@@ -26,6 +26,7 @@ contract StrategyBoringPPBTC {
     address constant public want       = address(0x6C189Baa963060DAEEC77B7305b055216090bFC4); // Pledge Provider Token BTC
     address constant public boring     = address(0xBC19712FEB3a26080eBf6f2F7849b417FdD792CA); // BORING TOKEN
     address constant public boringChef = address(0x204c87CDA5DAAC87b2Fc562bFb5371a0B066229C); // BORING Chef
+    uint256 constant public pid = 0;
 
     constructor(address _controller) public {
         governance = msg.sender;
@@ -82,7 +83,7 @@ contract StrategyBoringPPBTC {
     function _withdraw(address _receiver, uint256 _amount) internal {
         uint256 _balance = IERC20(want).balanceOf(address(this));
         if (_balance < _amount) {
-            IBoringChef(boringChef).withdraw(0, _amount.sub(_balance));
+            IBoringChef(boringChef).withdraw(pid, _amount.sub(_balance));
             _balance = IERC20(want).balanceOf(address(this));
             if (_balance < _amount) {
                 _amount = _balance;
@@ -96,7 +97,7 @@ contract StrategyBoringPPBTC {
         require(msg.sender == controller, "!controller");
         uint256 _amount = boringChefWant();
         if (_amount > 0) {
-            IBoringChef(boringChef).emergencyWithdraw(0);
+            IBoringChef(boringChef).emergencyWithdraw(pid);
         }
         debt = 0;
         _balance = IERC20(want).balanceOf(address(this));
@@ -116,14 +117,14 @@ contract StrategyBoringPPBTC {
         uint256 _balance = balanceWant();
         if (_balance > 0) {
             IERC20(want).safeApprove(boringChef, _balance);
-            IBoringChef(boringChef).deposit(0, _balance);
+            IBoringChef(boringChef).deposit(pid, _balance);
         }
     }
 
     function harvest() external {
         require(msg.sender == strategist || msg.sender == governance, "!authorized");
         if (claim) {
-            IBoringChef(boringChef).deposit(0, 0);
+            IBoringChef(boringChef).deposit(pid, 0);
         }
 
         uint256 _amount = balanceBoring();
@@ -142,14 +143,14 @@ contract StrategyBoringPPBTC {
         return IERC20(want).balanceOf(address(this));
     }
     function boringChefWant() public view returns (uint256 _amount) {
-        (_amount,) = IBoringChef(boringChef).userInfo(0, address(this));
+        (_amount,) = IBoringChef(boringChef).userInfo(pid, address(this));
     }
     function totalAssets() public view returns (uint256) {
         return balanceWant().add(boringChefWant());
     }
 
     function pendingBoring() public view returns (uint256) {
-        return IBoringChef(boringChef).pendingBoring(0, address(this));
+        return IBoringChef(boringChef).pendingBoring(pid, address(this));
     }
     function balanceBoring() public view returns (uint256) {
         return IERC20(boring).balanceOf(address(this));
