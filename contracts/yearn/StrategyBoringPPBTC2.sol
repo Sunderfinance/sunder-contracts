@@ -26,7 +26,7 @@ contract StrategyBoringPPBTC2 {
 
     address constant public want        = address(0x6C189Baa963060DAEEC77B7305b055216090bFC4); // Pledge Provider Token BTC
     address constant public boring      = address(0xBC19712FEB3a26080eBf6f2F7849b417FdD792CA); // BORING TOKEN
-    address constant public boringDAOV2 = address(0x77F79FEa3d135847098Adb1fdc6B10A0218823F5); // BORING Chef
+    address constant public boringDAOV2 = address(0x77F79FEa3d135847098Adb1fdc6B10A0218823F5); // BORING DAOV2
     address constant public boringChef  = address(0x204c87CDA5DAAC87b2Fc562bFb5371a0B066229C); // BORING Chef
     uint256 constant public pid = 0;
     bytes32 constant public tunnelKey = "BTC";
