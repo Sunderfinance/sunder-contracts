@@ -127,7 +127,7 @@ contract StrategyBoringPPBTC {
             IBoringChef(boringChef).deposit(pid, 0);
         }
 
-        uint256 _amount = balanceBoring();
+        uint256 _amount = IERC20(boring).balanceOf(address(this));
         if (_amount > 0) {
             address _vault = IController(controller).vaults(want);
             require(_vault != address(0), "address(0)");

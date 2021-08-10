@@ -139,11 +139,12 @@ contract StrategyCompound {
         uint256 _assets = totalAssets();
         if (_assets > debt){
             uint256 _amount = _assets - debt;
-            IController(controller).mint(address(want), _amount);
+            IController(controller).mint(want, _amount);
             debt = _assets;
-            uint256 _fee = _amount.mul(performanceFee).div(performanceMax);
+
             address _vault = IController(controller).vaults(want);
             require(_vault != address(0), "address(0)");
+            uint256 _fee = _amount.mul(performanceFee).div(performanceMax);
             uint256 _reward = _amount - _fee;
             IERC20(eToken).safeTransfer(_vault, _reward);
             IController(controller).setHarvestInfo(want, _reward);
