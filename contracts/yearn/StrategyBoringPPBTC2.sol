@@ -166,6 +166,10 @@ contract StrategyBoringPPBTC2 {
         IFeePool(feePool).claimFee();
     }
 
+    function boringEarned() external view returns(uint256,uint256) {
+        return IFeePool(feePool).earned(address(this));
+    }
+
     function balanceWant() public view returns (uint256) {
         return IERC20(want).balanceOf(address(this));
     }
