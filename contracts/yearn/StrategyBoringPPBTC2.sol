@@ -24,7 +24,7 @@ contract StrategyBoringPPBTC2 {
     bool public claim;
     uint256 public performanceFee = 500;
     uint256 constant public performanceMax = 10000;
-
+    /*
     address constant public want        = address(0x6C189Baa963060DAEEC77B7305b055216090bFC4); // Pledge Provider Token BTC
     address constant public boring      = address(0xBC19712FEB3a26080eBf6f2F7849b417FdD792CA); // BORING TOKEN
     address constant public boringDAOV2 = address(0x77F79FEa3d135847098Adb1fdc6B10A0218823F5); // BORING DAOV2
@@ -35,6 +35,18 @@ contract StrategyBoringPPBTC2 {
     address constant public dToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
 
     address constant public feePool = address(0x2b781634e4cb0b5236cC957DABA88F911FD66fCD);  // BORING feePool
+    address constant public oBtc    = address(0x8064d9Ae6cDf087b1bcd5BDf3531bD5d8C537a68);  // BORING oBTC
+    */
+    address constant public want        = address(0x9522AFFe079A544938DCF9496f0D008D3D3F9Fa2); // Pledge Provider Token BTC
+    address constant public boring      = address(0xc7B671261e2EAd806756D66bFB41980bB627B101); // BORING TOKEN
+    address constant public boringDAOV2 = address(0xaa3B8F0EB4d35952232F2Bb167A3910144A98148); // BORING DAOV2
+    address constant public boringChef  = address(0x71C2d4Bd90300d9ab20D4131BafBB9De5c025662); // BORING Chef
+    uint256 constant public pid = 0;
+    bytes32 constant public tunnelKey = "BTC";
+    address constant public eToken = address(0x3dcec0AcB78749E6FcFA6916A6BaA81A62fE7DcE);  // online update address
+    address constant public dToken = address(0x9435dF1C785F6Bce52952bfdD872f65A19A1729D);  // online update address
+
+    address constant public feePool = address(0xcf761623c643EC79e4889606DB2544e43f511Ee4);  // BORING feePool
     address constant public oBtc    = address(0x8064d9Ae6cDf087b1bcd5BDf3531bD5d8C537a68);  // BORING oBTC
 
     constructor(address _controller) public {
@@ -125,7 +137,7 @@ contract StrategyBoringPPBTC2 {
         require(msg.sender == strategist || msg.sender == governance, "!authorized");
         uint256 _balance = balanceWant();
         if (_balance > 0) {
-            IERC20(want).safeApprove(boringChef, _balance);
+            IERC20(want).approve(boringChef, _balance);
             IBoringChef(boringChef).deposit(pid, _balance);
         }
     }
@@ -143,7 +155,7 @@ contract StrategyBoringPPBTC2 {
             _amount = _amount - _fee;
 
             uint256 _balance1 = IERC20(want).balanceOf(address(this));
-            IERC20(boring).safeApprove(boringChef, _amount);
+            IERC20(boring).approve(boringDAOV2, _amount);
             IBoringDAO(boringDAOV2).pledge(tunnelKey, _amount);
             uint256 _balance2 = IERC20(want).balanceOf(address(this));
 
