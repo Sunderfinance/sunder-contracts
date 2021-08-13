@@ -116,7 +116,7 @@ contract StrategyBoringPPBTC2 {
     // Withdraw all funds, normally used when migrating strategies
     function withdrawAll(address _receiver) external returns (uint256 _balance) {
         require(msg.sender == controller, "!controller");
-        uint256 _amount = boringChefWant();
+        uint256 _amount = balanceChefWant();
         if (_amount > 0) {
             IBoringChef(boringChef).emergencyWithdraw(pid);
         }
@@ -185,11 +185,11 @@ contract StrategyBoringPPBTC2 {
     function balanceWant() public view returns (uint256) {
         return IERC20(want).balanceOf(address(this));
     }
-    function boringChefWant() public view returns (uint256 _amount) {
+    function balanceChefWant() public view returns (uint256 _amount) {
         (_amount,) = IBoringChef(boringChef).userInfo(pid, address(this));
     }
     function totalAssets() public view returns (uint256) {
-        return balanceWant().add(boringChefWant());
+        return balanceWant().add(balanceChefWant());
     }
 
     function pendingBoring() public view returns (uint256) {
