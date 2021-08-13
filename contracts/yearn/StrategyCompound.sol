@@ -122,7 +122,7 @@ contract StrategyCompound {
         require(msg.sender == strategist || msg.sender == governance, "!authorized");
         uint256 _balance = IERC20(want).balanceOf(address(this));
         if (_balance > 0) {
-            IERC20(want).safeApprove(cComp, _balance);
+            IERC20(want).approve(cComp, _balance);
             ICToken(cComp).mint(_balance);
         }
     }

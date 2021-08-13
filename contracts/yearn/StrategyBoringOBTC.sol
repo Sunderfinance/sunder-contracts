@@ -116,7 +116,7 @@ contract StrategyBoringOBTC {
         require(msg.sender == strategist || msg.sender == governance, "!authorized");
         uint256 _balance = balanceWant();
         if (_balance > 0) {
-            IERC20(want).safeApprove(boringChef, _balance);
+            IERC20(want).approve(boringChef, _balance);
             IBoringChef(boringChef).deposit(pid, _balance);
         }
     }

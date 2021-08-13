@@ -163,7 +163,7 @@ contract Controller {
             uint256[] memory _distribution;
             uint256 _expected;
             _before = IERC20(_want).balanceOf(address(this));
-            IERC20(_token).safeApprove(onesplit, _amount);
+            IERC20(_token).approve(onesplit, _amount);
             (_expected, _distribution) = IOneSplitAudit(onesplit).getExpectedReturn(_token, _want, _amount, _parts, 0);
             IOneSplitAudit(onesplit).swap(_token, _want, _amount, _expected, _distribution, 0);
             _after = IERC20(_want).balanceOf(address(this));
