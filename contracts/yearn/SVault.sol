@@ -27,10 +27,9 @@ contract SVault is ERC20 {
     event Deposit(address indexed account, uint256 amount, uint256 share);
     event Withdraw(address indexed account, uint256 amount, uint256 share);
 
-    constructor (address _eToken, address _controller) public ERC20(
-        string(abi.encodePacked("sunder ", ERC20(_eToken).name())),
-        string(abi.encodePacked("s", ERC20(_eToken).symbol())))
-    {
+    constructor(address _eToken, address _controller) public ERC20(
+      string(abi.encodePacked("sunder ", ERC20(_eToken).name())),
+      string(abi.encodePacked("s", ERC20(_eToken).symbol()))) {
         eToken = IERC20(_eToken);
         governance = msg.sender;
         controller = _controller;

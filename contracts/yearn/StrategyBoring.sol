@@ -7,8 +7,6 @@ import "@openzeppelinV3/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelinV3/contracts/math/SafeMath.sol";
 
 import "../../interfaces/boring/IBoringChef.sol";
-import "../../interfaces/boring/IBoringDAO.sol";
-import "../../interfaces/boring/IFeePool.sol";
 import "../../interfaces/yearn/IController.sol";
 
 contract StrategyBoring {
@@ -136,7 +134,7 @@ contract StrategyBoring {
             IBoringChef(boringChef).deposit(pid, 0);
         }
         uint256 _assets = totalAssets();
-        if (_assets > debt){
+        if (_assets > debt) {
             uint256 _amount = _assets - debt;
             IController(controller).mint(want, _amount);
             debt = _assets;
