@@ -93,7 +93,7 @@ contract StrategyXSushi {
         require(msg.sender == controller, "!controller");
         uint256 _amount = balanceBentoWant();
         if (_amount > 0) {
-            IBentoBox(bentoBox).withdraw(want, address(this), address(this), _amount.sub(_balance), 0);
+            IBentoBox(bentoBox).withdraw(want, address(this), address(this), _amount, 0);
         }
         debt = 0;
         _balance = IERC20(want).balanceOf(address(this));
