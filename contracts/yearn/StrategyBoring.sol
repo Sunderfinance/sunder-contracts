@@ -33,8 +33,8 @@ contract StrategyBoring {
     address constant public boringChef  = address(0x636C8230AE0A564fD9486C5894DBe8ae4989A12e); // BORING Chef
     uint256 constant public pid = 0;
 
-    address constant public eToken = address(0x3FC595d642b9A9dCE684c0313fb9B4e91E03bD0e);
-    address constant public dToken = address(0xE62cAc3c7c22d90dad6002f5c2bA79e8C37696cB);
+    address constant public dToken = address(0x210dd5966783e91F2ABEeAf26421052E18738DcB);
+    address constant public eToken = address(0x04bbE030d0465bB7E0d26De17e56e580c056E6Bd);
 
     constructor(address _controller) public {
         governance = msg.sender;
