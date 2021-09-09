@@ -130,9 +130,15 @@ contract StrategyBoring {
 
     function harvest() external {
         require(msg.sender == strategist || msg.sender == governance, "!authorized");
+
         if (claim) {
-            IBoringChef(boringChef).deposit(pid, 0);
+            uint256 _balance = balanceWant();
+            if (_balance > 0) {
+                IERC20(want).approve(boringChef, _balance);
+            }
+            IBoringChef(boringChef).deposit(pid, _balance);
         }
+
         uint256 _assets = totalAssets();
         if (_assets > debt) {
             uint256 _amount = _assets - debt;
@@ -157,7 +163,7 @@ contract StrategyBoring {
         (_amount,) = IBoringChef(boringChef).userInfo(pid, address(this));
     }
     function totalAssets() public view returns (uint256) {
-        return balanceWant().add(balanceChefWant());
+        return balanceWant().add(balanceChefWant()).add(pendingBoring());
     }
     function pendingBoring() public view returns (uint256) {
         return IBoringChef(boringChef).pendingBoring(pid, address(this));
