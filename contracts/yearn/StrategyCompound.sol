@@ -26,8 +26,9 @@ contract StrategyCompound {
 
     address constant public want  = address(0xc00e94Cb662C3520282E6f5717214004A7f26888); // mainnet comp
     address constant public cComp = address(0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4);
-    address constant public eToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
-    address constant public dToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
+    address constant public dToken = address(0x47757e903F54752864fD1CA934FF04f3DeeB016E);  // online update address
+    address constant public eToken = address(0x36300756B98EB06bc553E657B702a50d53F61155);  // online update address
+
     ICompController constant public compController = ICompController(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
     constructor(address _controller) public {

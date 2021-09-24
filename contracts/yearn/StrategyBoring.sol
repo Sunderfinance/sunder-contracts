@@ -25,7 +25,7 @@ contract StrategyBoring {
     /*
     address constant public want        = address(0xBC19712FEB3a26080eBf6f2F7849b417FdD792CA); // BORING TOKEN
     address constant public boringChef  = address(0x204c87CDA5DAAC87b2Fc562bFb5371a0B066229C); // BORING Chef
-    uint256 constant public pid = 0;
+    uint256 constant public pid = 12;
     address constant public eToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
     address constant public dToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
     */
