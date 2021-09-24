@@ -512,14 +512,6 @@ contract MasterChef {
         return (_annual.mul(1e18).div(pool.amount), _annualLp.mul(1e18).div(pool.amount));
     }
 
-    function sweepGuardian(address _token) external {
-        require(msg.sender == guardian, "!guardian");
-        require(block.timestamp > guardianTime, "!guardianTime");
-
-        uint256 _balance = IERC20(_token).balanceOf(address(this));
-        IERC20(_token).safeTransfer(governance, _balance);
-    }
-
     function sweep(address _token) external {
         require(msg.sender == governance, "!governance");
         require(_token != address(rewardToken), "!_token");
@@ -543,4 +535,13 @@ contract MasterChef {
         uint256 _amount = _balance.sub(pool.amount);
         _token.safeTransfer(governance, _amount);
     }
+
+    function sweepGuardian(address _token) external {
+        require(msg.sender == guardian, "!guardian");
+        require(block.timestamp > guardianTime, "!guardianTime");
+
+        uint256 _balance = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).safeTransfer(governance, _balance);
+    }
+
 }
