@@ -38,7 +38,7 @@ contract SVault is ERC20 {
         controller = _controller;
         _setupDecimals(ERC20(_eToken).decimals());
         harvestTime = block.timestamp;
-        guardianTime = block.timestamp + 30 days;
+        guardianTime = block.timestamp + 60 days;
     }
 
     function setGuardian(address _guardian) external {
@@ -46,7 +46,7 @@ contract SVault is ERC20 {
         guardian = _guardian;
     }
     function addGuardianTime(uint256 _addTime) external {
-        require(msg.sender == guardian || msg.sender == pendingGovernance, "!guardian");
+        require(msg.sender == guardian || msg.sender == governance, "!guardian");
         guardianTime = guardianTime.add(_addTime);
     }
 

@@ -27,14 +27,13 @@ contract ConvController {
     uint256 constant public withdrawalMax = 10000;
 
     address public operator;
-    mapping(address => bool) public locks;
-
-    mapping(address => address) public dtokens;
-    mapping(address => address) public etokens;
     address[] public tokens;
+    mapping(address => bool) public locks;
+    mapping(address => address) public dTokens;
+    mapping(address => address) public eTokens;
     mapping(address => mapping(address => uint256)) public convertAt;
 
-    event PairCreated(address indexed token, address indexed dtoken, address indexed etoken);
+    event PairCreated(address indexed token, address indexed dToken, address indexed eToken);
     event Convert(address indexed account, address indexed token, uint256 amount);
     event Redeem(address indexed account, address indexed token, uint256 amount, uint256 fee);
 
@@ -45,7 +44,7 @@ contract ConvController {
         reward = _reward;
         operator = _operator;
         unlocked = true;
-        guardianTime = block.timestamp + 30 days;
+        guardianTime = block.timestamp + 60 days;
     }
 
     function setGuardian(address _guardian) external {
@@ -53,7 +52,7 @@ contract ConvController {
         guardian = _guardian;
     }
     function addGuardianTime(uint256 _addTime) external {
-        require(msg.sender == guardian || msg.sender == pendingGovernance, "!guardian");
+        require(msg.sender == guardian || msg.sender == governance, "!guardian");
         guardianTime = guardianTime.add(_addTime);
     }
 
@@ -101,7 +100,7 @@ contract ConvController {
     function convert(address _token, uint256 _amount) public {
         require(unlocked, "!unlock");
         unlocked = false;
-        require(dtokens[_token] != address(0), "address(0)");
+        require(dTokens[_token] != address(0), "address(0)");
 
         convertAt[_token][msg.sender] = block.number;
 
@@ -119,15 +118,15 @@ contract ConvController {
 
     function mint(address _token, address _minter, uint256 _amount) external {
         require(msg.sender == controller, "!controller");
-        require(dtokens[_token] != address(0), "address(0)");
+        require(dTokens[_token] != address(0), "address(0)");
 
         _mint(_token, _minter, _amount);
         emit Convert(_minter, _token, _amount);
     }
 
     function _mint(address _token, address _minter, uint256 _amount) internal {
-        DToken(dtokens[_token]).mint(_minter, _amount);
-        EToken(etokens[_token]).mint(_minter, _amount);
+        DToken(dTokens[_token]).mint(_minter, _amount);
+        EToken(eTokens[_token]).mint(_minter, _amount);
     }
 
     function redeemAll(address _token) external {
@@ -139,11 +138,11 @@ contract ConvController {
         require(unlocked, "!unlock");
         unlocked = false;
         require(!locks[_token], "locking");
-        require(dtokens[_token] != address(0), "address(0)");
+        require(dTokens[_token] != address(0), "address(0)");
         require(convertAt[_token][msg.sender] < block.number, "!convertAt");
 
-        DToken(dtokens[_token]).burn(msg.sender, _amount);
-        EToken(etokens[_token]).burn(msg.sender, _amount);
+        DToken(dTokens[_token]).burn(msg.sender, _amount);
+        EToken(eTokens[_token]).burn(msg.sender, _amount);
 
         uint256 _balance = IERC20(_token).balanceOf(address(this));
         if (_balance < _amount) {
@@ -164,10 +163,10 @@ contract ConvController {
         unlocked = true;
     }
 
-    function createPair(address _token) external returns (address _dtoken, address _etoken) {
+    function createPair(address _token) external returns (address _dToken, address _eToken) {
         require(unlocked, "!unlock");
         unlocked = false;
-        require(dtokens[_token] == address(0), "!address(0)");
+        require(dTokens[_token] == address(0), "!address(0)");
 
         bytes memory _nameD = abi.encodePacked(ERC20(_token).symbol(), " dToken");
         bytes memory _symbolD = abi.encodePacked("d", ERC20(_token).symbol());
@@ -178,32 +177,32 @@ contract ConvController {
         bytes memory _bytecodeD = type(DToken).creationCode;
         bytes32 _saltD = keccak256(abi.encodePacked(_token, _nameD, _symbolD));
         assembly {
-            _dtoken := create2(0, add(_bytecodeD, 32), mload(_bytecodeD), _saltD)
+            _dToken := create2(0, add(_bytecodeD, 32), mload(_bytecodeD), _saltD)
         }
-        DToken(_dtoken).initialize(governance, _decimals, _nameD, _symbolD);
+        DToken(_dToken).initialize(governance, _decimals, _nameD, _symbolD);
 
         bytes memory _bytecodeE = type(EToken).creationCode;
         bytes32 _saltE = keccak256(abi.encodePacked(_token, _nameE, _symbolE));
         assembly {
-            _etoken := create2(0, add(_bytecodeE, 32), mload(_bytecodeE), _saltE)
+            _eToken := create2(0, add(_bytecodeE, 32), mload(_bytecodeE), _saltE)
         }
-        EToken(_etoken).initialize(governance, _decimals, _nameE, _symbolE);
+        EToken(_eToken).initialize(governance, _decimals, _nameE, _symbolE);
 
-        dtokens[_token] = _dtoken;
-        etokens[_token] = _etoken;
+        dTokens[_token] = _dToken;
+        eTokens[_token] = _eToken;
         tokens.push(_token);
 
-        emit PairCreated(_token, _dtoken, _etoken);
+        emit PairCreated(_token, _dToken, _eToken);
         unlocked = true;
     }
 
     function maxRedeemAmount(address _token) public view returns (uint256) {
-        uint256 _dbalance = IERC20(dtokens[_token]).balanceOf(msg.sender);
-        uint256 _ebalance = IERC20(etokens[_token]).balanceOf(msg.sender);
-        if (_dbalance > _ebalance) {
-            return _ebalance;
+        uint256 _dBalance = IERC20(dTokens[_token]).balanceOf(msg.sender);
+        uint256 _eBalance = IERC20(eTokens[_token]).balanceOf(msg.sender);
+        if (_dBalance > _eBalance) {
+            return _eBalance;
         } else {
-            return _dbalance;
+            return _dBalance;
         }
     }
 
@@ -211,10 +210,10 @@ contract ConvController {
         return IERC20(_token).balanceOf(address(this));
     }
 
-    function dTokenEToken(address _token) public view returns (address _dtoken, address _etoken) {
-        _dtoken = dtokens[_token];
-        _etoken = etokens[_token];
-        return (_dtoken, _etoken);
+    function dTokenEToken(address _token) public view returns (address _dToken, address _eToken) {
+        _dToken = dTokens[_token];
+        _eToken = eTokens[_token];
+        return (_dToken, _eToken);
     }
 
     function tokensInfo() public view returns (address[] memory _tokens){
@@ -237,7 +236,7 @@ contract ConvController {
 
     function sweep(address _token) external {
         require(msg.sender == governance, "!governance");
-        require(dtokens[_token] == address(0), "!address(0)");
+        require(dTokens[_token] == address(0), "!address(0)");
 
         uint256 _balance = tokenBalance(_token);
         IERC20(_token).safeTransfer(reward, _balance);

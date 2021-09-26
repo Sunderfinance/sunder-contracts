@@ -9,6 +9,28 @@ import "@openzeppelinV3/contracts/math/SafeMath.sol";
 contract MasterChef {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
+
+    address public governance;
+    address public pendingGovernance;
+    address public guardian;
+    uint256 public guardianTime;
+    uint256 public MaxStartLeadTime;
+    uint256 public maxPeriod;
+
+    IERC20  public rewardToken;
+    uint256 public totalReward;
+    uint256 public totalGain;
+    uint256 public intervalTime;
+
+    uint256 public epochId;
+    uint256 public reward;
+    uint256 public startTime;
+    uint256 public endTime;
+    uint256 public period;
+
+    // Total allocation poitns. Must be the sum of all allocation points in all pools.
+    uint256 public totalAllocPoint;
+
     // Info of each user.
     struct UserInfo {
         uint256 depositTime;
@@ -35,25 +57,6 @@ contract MasterChef {
         uint256 period;
         uint256 accRewardTokenPerShare; // Accumulated Token per share, times 1e18. See below.
     }
-
-    address public governance;
-    address public pendingGovernance;
-    address public guardian;
-    uint256 public guardianTime;
-    uint256 public MaxStartLeadTime;
-    uint256 public MaxPeriod;
-
-    IERC20  public rewardToken;
-    uint256 public totalReward;
-    uint256 public totalGain;
-    uint256 public intervalTime;
-
-    uint256 public epochId;
-    uint256 public reward;
-    uint256 public startTime;
-    uint256 public endTime;
-    uint256 public period;
-
     struct EpochReward {
         uint256 epochId;
         uint256 startTime;
@@ -62,14 +65,11 @@ contract MasterChef {
     }
     mapping(uint256 => EpochReward) public epochRewards;
     mapping(uint256 => mapping(uint256 => EpochReward)) public lpEpochRewards;
-
-    // Total allocation poitns. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint;
+    // Info of each user that stakes LP tokens.
+    mapping(uint256 => mapping(address => UserInfo)) public userInfos;
 
     // Info of each pool.
     PoolInfo[] public poolInfos;
-    // Info of each user that stakes LP tokens.
-    mapping(uint256 => mapping(address => UserInfo)) public userInfos;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -82,9 +82,9 @@ contract MasterChef {
         governance = msg.sender;
         guardian = msg.sender;
         MaxStartLeadTime = _maxStartLeadTime;
-        MaxPeriod = _maxPeriod;
+        maxPeriod = _maxPeriod;
         intervalTime = _intervalTime;
-        guardianTime = block.timestamp + 30 days;
+        guardianTime = block.timestamp + 60 days;
     }
 
     function setGuardian(address _guardian) external {
@@ -92,7 +92,7 @@ contract MasterChef {
         guardian = _guardian;
     }
     function addGuardianTime(uint256 _addTime) external {
-        require(msg.sender == guardian || msg.sender == pendingGovernance, "!guardian");
+        require(msg.sender == guardian || msg.sender == governance, "!guardian");
         guardianTime = guardianTime.add(_addTime);
     }
 
@@ -175,7 +175,7 @@ contract MasterChef {
         require(block.timestamp <= _startTime, "!_startTime");
         require(_startTime <= block.timestamp + MaxStartLeadTime, "!_startTime MaxStartLeadTime");
         require(_period > 0, "!_period");
-        require(_period <= MaxPeriod, "!_period MaxPeriod");
+        require(_period <= maxPeriod, "!_period maxPeriod");
 
         if (_withUpdate) {
             massUpdatePools();
@@ -208,7 +208,7 @@ contract MasterChef {
         require(block.timestamp <= _startTime, "!_startTime");
         require(_startTime <= block.timestamp + MaxStartLeadTime, "!_startTime MaxStartLeadTime");
         require(_period > 0, "!_period");
-        require(_period <= MaxPeriod, "!_period MaxPeriod");
+        require(_period <= maxPeriod, "!_period maxPeriod");
 
         updatePool(_pid);
         IERC20(pool.rewardToken).safeTransferFrom(msg.sender, address(this), _reward);

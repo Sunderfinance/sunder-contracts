@@ -38,46 +38,46 @@ contract Vote {
         voteController = _voteController;
     }
 
-    function delegate(address _comp) external {
-        IComp(_comp).delegate(address(this));
+    function delegate(address _token) external {
+        IComp(_token).delegate(address(this));
     }
 
-    function returnToken(address _comp, address _receiver) external returns (uint256 _amount) {
+    function returnToken(address _token, address _receiver) external returns (uint256 _amount) {
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
-        _amount = IERC20(_comp).balanceOf(address(this));
-        IERC20(_comp).safeTransfer(_receiver, _amount);
+        _amount = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).safeTransfer(_receiver, _amount);
     }
 
-    function castVote(address _comp, uint256 _proposalId) external {
+    function castVote(address _token, uint256 _proposalId) external {
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
-        address governor = IVoteController(voteController).governors(_comp);
+        address governor = IVoteController(voteController).governors(_token);
         require(governor != address(0), "!governor");
         IGovernorDelegate(governor).castVote(_proposalId, support);
     }
 
-    function propose(address _comp, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256){
+    function propose(address _token, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) external returns (uint256){
         require(msg.sender == voteController || msg.sender == governance, "!voteController");
-        address governor = IVoteController(voteController).governors(_comp);
+        address governor = IVoteController(voteController).governors(_token);
         require(governor != address(0), "!governor");
         return IGovernorDelegate(governor).propose(targets, values, signatures, calldatas, description);
     }
 
-    function proposalThreshold(address _comp) public view returns (uint256){
-        address governor = IVoteController(voteController).governors(_comp);
+    function proposalThreshold(address _token) public view returns (uint256){
+        address governor = IVoteController(voteController).governors(_token);
         require(governor != address(0), "!governor");
         return IGovernorDelegate(governor).proposalThreshold();
     }
 
-    function state(address _comp, uint256 _proposalId) public view returns (uint8){
-        address governor = IVoteController(voteController).governors(_comp);
+    function state(address _token, uint256 _proposalId) public view returns (uint8){
+        address governor = IVoteController(voteController).governors(_token);
         require(governor != address(0), "!governor");
         return IGovernorDelegate(governor).state(_proposalId);
     }
 
-    function proposals(address _comp, uint256 _proposalId) public view returns (uint256 _id, address _proposer,
+    function proposals(address _token, uint256 _proposalId) public view returns (uint256 _id, address _proposer,
         uint256 _eta, uint256 _startBlock, uint256 _endBlock, uint256 _forVotes, uint256 _againstVotes,
         uint256 _abstainVotes, bool _canceled, bool _executed){
-        address governor = IVoteController(voteController).governors(_comp);
+        address governor = IVoteController(voteController).governors(_token);
         require(governor != address(0), "!governor");
         return IGovernorDelegate(governor).proposals(_proposalId);
     }
