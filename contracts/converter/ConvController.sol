@@ -40,6 +40,7 @@ contract ConvController {
 
     constructor(address _controller, address _reward, address _operator) public {
         governance = msg.sender;
+        guardian = msg.sender;
         controller = _controller;
         reward = _reward;
         operator = _operator;

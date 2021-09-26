@@ -34,6 +34,7 @@ contract SVault is ERC20 {
       string(abi.encodePacked("s", ERC20(_eToken).symbol()))) {
         eToken = IERC20(_eToken);
         governance = msg.sender;
+        guardian = msg.sender;
         controller = _controller;
         _setupDecimals(ERC20(_eToken).decimals());
         harvestTime = block.timestamp;
