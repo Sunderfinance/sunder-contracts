@@ -23,9 +23,9 @@ contract Controller {
     address public convController;
     address public voteController;
 
-    address public onesplit;
-    uint256 public split = 500;
-    uint256 public constant max = 10000;
+    address public oneSplit;
+    uint256 public splitFee = 500;
+    uint256 public constant splitMax = 10000;
 
     mapping(address => address) public vaults;
     mapping(address => address) public strategies;
@@ -34,7 +34,7 @@ contract Controller {
     constructor(address _rewards) public {
         governance = msg.sender;
         strategist = msg.sender;
-        onesplit = address(0x50FDA034C0Ce7a8f7EFDAebDA7Aa7cA21CC1267e);
+        oneSplit = address(0x50FDA034C0Ce7a8f7EFDAebDA7Aa7cA21CC1267e);
         rewards = _rewards;
     }
 
@@ -65,14 +65,14 @@ contract Controller {
         voteController = _voteController;
     }
 
-    function setOneSplit(address _onesplit) external {
+    function setOneSplit(address _oneSplit) external {
         require(msg.sender == governance, "!governance");
-        onesplit = _onesplit;
+        oneSplit = _oneSplit;
     }
-    function setSplit(uint256 _split) external {
+    function setSplit(uint256 _splitFee) external {
         require(msg.sender == governance, "!governance");
-        require(_split <= max, "!_split");
-        split = _split;
+        require(_splitFee <= splitMax, "!_splitFee");
+        splitFee = _splitFee;
     }
 
     function setVault(address _token, address _vault) external {
@@ -147,7 +147,7 @@ contract Controller {
     function getExpectedReturn(address _strategy, address _token, uint256 _parts) public view returns (uint256 expected) {
         uint256 _balance = IERC20(_token).balanceOf(_strategy);
         address _want = IStrategy(_strategy).want();
-        (expected,) = IOneSplitAudit(onesplit).getExpectedReturn(_token, _want, _balance, _parts, 0);
+        (expected,) = IOneSplitAudit(oneSplit).getExpectedReturn(_token, _want, _balance, _parts, 0);
     }
 
     // Only allows to withdraw non-core strategy tokens ~ this is over and above normal yield
@@ -163,13 +163,13 @@ contract Controller {
             uint256[] memory _distribution;
             uint256 _expected;
             _before = IERC20(_want).balanceOf(address(this));
-            IERC20(_token).approve(onesplit, _amount);
-            (_expected, _distribution) = IOneSplitAudit(onesplit).getExpectedReturn(_token, _want, _amount, _parts, 0);
-            IOneSplitAudit(onesplit).swap(_token, _want, _amount, _expected, _distribution, 0);
+            IERC20(_token).approve(oneSplit, _amount);
+            (_expected, _distribution) = IOneSplitAudit(oneSplit).getExpectedReturn(_token, _want, _amount, _parts, 0);
+            IOneSplitAudit(oneSplit).swap(_token, _want, _amount, _expected, _distribution, 0);
             _after = IERC20(_want).balanceOf(address(this));
             if (_after > _before) {
                 _amount = _after - _before;
-                uint256 _reward = _amount.mul(split).div(max);
+                uint256 _reward = _amount.mul(splitFee).div(splitMax);
                 _deposit(_want, _amount - _reward);
                 IERC20(_want).safeTransfer(rewards, _reward);
             }
