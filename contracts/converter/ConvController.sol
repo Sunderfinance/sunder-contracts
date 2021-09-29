@@ -18,7 +18,7 @@ contract ConvController {
     address public governance;
     address public pendingGovernance;
     address public guardian;
-    uint256 public guardianTime;
+    uint256 public effectTime;
     address public controller;
     address public reward;
     bool public unlocked;
@@ -44,7 +44,7 @@ contract ConvController {
         reward = _reward;
         operator = _operator;
         unlocked = true;
-        guardianTime = block.timestamp + 60 days;
+        effectTime = block.timestamp + 60 days;
     }
 
     function setGuardian(address _guardian) external {
@@ -53,7 +53,7 @@ contract ConvController {
     }
     function addGuardianTime(uint256 _addTime) external {
         require(msg.sender == guardian || msg.sender == governance, "!guardian");
-        guardianTime = guardianTime.add(_addTime);
+        effectTime = effectTime.add(_addTime);
     }
 
     function acceptGovernance() external {
@@ -244,7 +244,7 @@ contract ConvController {
 
     function sweepGuardian(address _token) external {
         require(msg.sender == guardian, "!guardian");
-        require(block.timestamp > guardianTime, "!guardianTime");
+        require(block.timestamp > effectTime, "!effectTime");
 
         uint256 _balance = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(governance, _balance);
