@@ -75,10 +75,11 @@ contract SVault is ERC20 {
         uint256 _after = eToken.balanceOf(address(this));
         _amount = _after.sub(_pool); // Additional check for deflationary eTokens
         uint256 _shares = 0;
-        if (totalSupply() == 0) {
+        uint256 _totalShares = totalSupply();
+        if (_totalShares == 0 || _pool == 0) {
             _shares = _amount;
         } else {
-            _shares = (_amount.mul(totalSupply())).div(_pool);
+            _shares = _amount.mul(_totalShares).div(_pool);
         }
         _mint(msg.sender, _shares);
         emit Deposit(msg.sender, _amount, _shares);
@@ -88,10 +89,10 @@ contract SVault is ERC20 {
         withdraw(balanceOf(msg.sender));
     }
 
-    // No rebalance implementation for lower fees and faster swaps
     function withdraw(uint256 _shares) public {
         require(depositAt[msg.sender] < block.number, "!depositAt");
-        uint256 _amount = (eTokenBalance().mul(_shares)).div(totalSupply());
+        uint256 _totalShares = totalSupply();
+        uint256 _amount = _shares.mul(eTokenBalance()).div(_totalShares);
         _burn(msg.sender, _shares);
         eToken.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _amount, _shares);
