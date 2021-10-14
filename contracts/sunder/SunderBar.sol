@@ -70,43 +70,41 @@ contract SunderBar is ERC20 {
         depositAt[msg.sender] = block.number;
         uint256 _pool = sunderBalance();
         sunder.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 _after = sunder.balanceOf(address(this));
-        uint256 _input = _after.sub(_pool);
-        require(_input == _amount, "!_input == _amount");
 
-        uint256 _shares = 0;
-        uint256 _totalShares = totalSupply();
-        if (_totalShares == 0 || _pool == 0) {
-            _shares = _amount;
+        uint256 _share = 0;
+        uint256 _total = totalSupply();
+        if (_total == 0 || _pool == 0) {
+            _share = _amount;
         } else {
-            _shares = _amount.mul(_totalShares).div(_pool);
+            _share = _amount.mul(_total).div(_pool);
         }
-        _mint(msg.sender, _shares);
-        emit Deposit(msg.sender, _amount, _shares);
+        _mint(msg.sender, _share);
+        emit Deposit(msg.sender, _amount, _share);
     }
 
     function withdrawAll() external {
         withdraw(balanceOf(msg.sender));
     }
 
-    function withdraw(uint256 _shares) public {
+    function withdraw(uint256 _share) public {
         require(depositAt[msg.sender] < block.number, "!depositAt");
-        uint256 _totalShares = totalSupply();
-        uint256 _amount = _shares.mul(sunderBalance()).div(_totalShares);
-        _burn(msg.sender, _shares);
+        uint256 _total = totalSupply();
+        uint256 _amount = _share.mul(sunderBalance()).div(_total);
+        _burn(msg.sender, _share);
         sunder.safeTransfer(msg.sender, _amount);
-        emit Withdraw(msg.sender, _amount, _shares);
+        emit Withdraw(msg.sender, _amount, _share);
     }
 
     function sunderBalance() public view returns (uint256) {
         return sunder.balanceOf(address(this));
     }
 
-    function getPricePerFullShare() public view returns (uint256) {
-        if (totalSupply() == 0) {
+    function getPricePerFullShare() external view returns (uint256) {
+        uint256 _total = totalSupply();
+        if (_total == 0) {
             return 1e18;
         }
-        return sunderBalance().mul(1e18).div(totalSupply());
+        return sunderBalance().mul(1e18).div(_total);
     }
 
     function annualRewardPerShare() public view returns (uint256) {
