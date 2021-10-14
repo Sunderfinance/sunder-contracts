@@ -74,28 +74,28 @@ contract SVault is ERC20 {
         eToken.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 _after = eToken.balanceOf(address(this));
         _amount = _after.sub(_pool); // Additional check for deflationary eTokens
-        uint256 _shares = 0;
-        uint256 _totalShares = totalSupply();
-        if (_totalShares == 0 || _pool == 0) {
-            _shares = _amount;
+        uint256 _share = 0;
+        uint256 _total = totalSupply();
+        if (_total == 0 || _pool == 0) {
+            _share = _amount;
         } else {
-            _shares = _amount.mul(_totalShares).div(_pool);
+            _share = _amount.mul(_total).div(_pool);
         }
-        _mint(msg.sender, _shares);
-        emit Deposit(msg.sender, _amount, _shares);
+        _mint(msg.sender, _share);
+        emit Deposit(msg.sender, _amount, _share);
     }
 
     function withdrawAll() external {
         withdraw(balanceOf(msg.sender));
     }
 
-    function withdraw(uint256 _shares) public {
+    function withdraw(uint256 _share) public {
         require(depositAt[msg.sender] < block.number, "!depositAt");
-        uint256 _totalShares = totalSupply();
-        uint256 _amount = _shares.mul(eTokenBalance()).div(_totalShares);
-        _burn(msg.sender, _shares);
+        uint256 _total = totalSupply();
+        uint256 _amount = _share.mul(eTokenBalance()).div(_total);
+        _burn(msg.sender, _share);
         eToken.safeTransfer(msg.sender, _amount);
-        emit Withdraw(msg.sender, _amount, _shares);
+        emit Withdraw(msg.sender, _amount, _share);
     }
 
     function eTokenBalance() public view returns (uint256) {
