@@ -57,7 +57,7 @@ contract SunderBar is ERC20 {
         require(msg.sender == governance, "!governance");
         pendingGovernance = _pendingGovernance;
     }
-    function setController(address _operator) external {
+    function setOperator(address _operator) external {
         require(msg.sender == governance, "!governance");
         operator = _operator;
     }
@@ -88,8 +88,9 @@ contract SunderBar is ERC20 {
 
     function withdraw(uint256 _share) public {
         require(depositAt[msg.sender] < block.number, "!depositAt");
+        uint256 _pool = sunderBalance();
         uint256 _total = totalSupply();
-        uint256 _amount = _share.mul(sunderBalance()).div(_total);
+        uint256 _amount = _share.mul(_pool).div(_total);
         _burn(msg.sender, _share);
         sunder.safeTransfer(msg.sender, _amount);
         emit Withdraw(msg.sender, _amount, _share);
