@@ -120,7 +120,7 @@ contract StrategyCompound {
     }
 
     function earn() external {
-        require(msg.sender == strategist || msg.sender == governance, "!authorized");
+        require(msg.sender == strategist || msg.sender == governance, "!strategist");
         uint256 _balance = IERC20(want).balanceOf(address(this));
         if (_balance > 0) {
             IERC20(want).approve(cComp, _balance);
@@ -129,7 +129,7 @@ contract StrategyCompound {
     }
 
     function harvest() external {
-        require(msg.sender == strategist || msg.sender == governance, "!authorized");
+        require(msg.sender == strategist || msg.sender == governance, "!strategist");
         if (claim) {
             address[] memory holders = new address[](1);
             holders[0] = address(this);
