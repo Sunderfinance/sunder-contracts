@@ -14,8 +14,8 @@ contract MasterChef {
     address public pendingGovernance;
     address public guardian;
     uint256 public effectTime;
-    uint256 public MaxStartLeadTime;
-    uint256 public maxPeriod;
+    uint256 constant public maxStartLeadTime = 60 days;
+    uint256 constant public maxPeriod = 800 days;
 
     IERC20  public rewardToken;
     uint256 public totalReward;
@@ -77,12 +77,10 @@ contract MasterChef {
     event EmergencyWithdraw(address indexed user, uint256 indexed pid,  uint256 amount);
     event SetLpReward(uint256 indexed pid, uint256 indexed epochId, uint256 startTime, uint256 period, uint256 reward);
 
-    constructor(address _rewardToken, uint256 _maxStartLeadTime, uint256 _maxPeriod, uint256 _intervalTime) public {
+    constructor(address _rewardToken, uint256 _intervalTime) public {
         rewardToken = IERC20(_rewardToken);
         governance = msg.sender;
         guardian = msg.sender;
-        MaxStartLeadTime = _maxStartLeadTime;
-        maxPeriod = _maxPeriod;
         intervalTime = _intervalTime;
         effectTime = block.timestamp + 60 days;
     }
@@ -173,7 +171,7 @@ contract MasterChef {
         require(msg.sender == governance, "!governance");
         require(endTime < block.timestamp, "!endTime");
         require(block.timestamp <= _startTime, "!_startTime");
-        require(_startTime <= block.timestamp + MaxStartLeadTime, "!_startTime MaxStartLeadTime");
+        require(_startTime <= block.timestamp + maxStartLeadTime, "!_startTime maxStartLeadTime");
         require(_period > 0, "!_period");
         require(_period <= maxPeriod, "!_period maxPeriod");
 
@@ -206,7 +204,7 @@ contract MasterChef {
         require(pool.rewardToken != address(0), "!pool.rewardToken");
         require(pool.endTime < block.timestamp, "!endTime");
         require(block.timestamp <= _startTime, "!_startTime");
-        require(_startTime <= block.timestamp + MaxStartLeadTime, "!_startTime MaxStartLeadTime");
+        require(_startTime <= block.timestamp + maxStartLeadTime, "!_startTime maxStartLeadTime");
         require(_period > 0, "!_period");
         require(_period <= maxPeriod, "!_period maxPeriod");
 
@@ -451,7 +449,7 @@ contract MasterChef {
         require(_pid < poolInfos.length, "!_pid");
         PoolInfo storage pool = poolInfos[_pid];
         UserInfo storage user = userInfos[_pid][msg.sender];
-        require(block.timestamp >= user.depositTime + 1, "!intervalTime"); // prevent flash loan
+        require(block.timestamp >= user.depositTime + 1, "!withdraw Time"); // prevent flash loan
 
         user.reward = 0;
         user.rewardLp = 0;
