@@ -24,10 +24,10 @@ contract StrategyCompound {
     uint256 public performanceFee = 500;
     uint256 constant public performanceMax = 10000;
 
-    address constant public want  = address(0xc00e94Cb662C3520282E6f5717214004A7f26888); // mainnet comp
-    address constant public cComp = address(0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4);
-    address constant public dToken = address(0x47757e903F54752864fD1CA934FF04f3DeeB016E);  // online update address
-    address constant public eToken = address(0x36300756B98EB06bc553E657B702a50d53F61155);  // online update address
+    address constant public want   = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);
+    address constant public cComp  = address(0x70e36f6BF80a52b3B46b3aF8e106CC0ed743E8e4);
+    address constant public dToken = address(0xD7ff7290C83a4B82AcCDf68247e47cF8a1589e51);
+    address constant public eToken = address(0xC56e2a2455fFb19906ee6BA0CC7d4B9a4cE2c38C);
 
     ICompController constant public compController = ICompController(0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B);
 
