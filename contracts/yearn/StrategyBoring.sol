@@ -22,19 +22,12 @@ contract StrategyBoring {
     bool public claim;
     uint256 public performanceFee = 500;
     uint256 constant public performanceMax = 10000;
-    /*
+
     address constant public want        = address(0xBC19712FEB3a26080eBf6f2F7849b417FdD792CA); // BORING TOKEN
     address constant public boringChef  = address(0x204c87CDA5DAAC87b2Fc562bFb5371a0B066229C); // BORING Chef
     uint256 constant public pid = 12;
-    address constant public eToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
-    address constant public dToken = address(0xc00e94Cb662C3520282E6f5717214004A7f26888);  // online update address
-    */
-    address constant public want        = address(0x83182f8eEfc80478acF35CbBf05003CE410111B2); // BORING
-    address constant public boringChef  = address(0x636C8230AE0A564fD9486C5894DBe8ae4989A12e); // BORING Chef
-    uint256 constant public pid = 0;
-
-    address constant public dToken = address(0x210dd5966783e91F2ABEeAf26421052E18738DcB);
-    address constant public eToken = address(0x04bbE030d0465bB7E0d26De17e56e580c056E6Bd);
+    address constant public eToken = address(0xAe61EBE4b70f0740C53482413C56B8C924e1A9c3);
+    address constant public dToken = address(0x066CdF088C17fF05432A48b08f701f5EB8c3CDF3);
 
     constructor(address _controller) public {
         governance = msg.sender;
@@ -120,7 +113,7 @@ contract StrategyBoring {
     }
 
     function earn() external {
-        require(msg.sender == strategist || msg.sender == governance, "!authorized");
+        require(msg.sender == strategist || msg.sender == governance, "!strategist");
         uint256 _balance = balanceWant();
         if (_balance > 0) {
             IERC20(want).approve(boringChef, _balance);
@@ -129,7 +122,7 @@ contract StrategyBoring {
     }
 
     function harvest() external {
-        require(msg.sender == strategist || msg.sender == governance, "!authorized");
+        require(msg.sender == strategist || msg.sender == governance, "!strategist");
 
         if (claim) {
             uint256 _balance = balanceWant();
@@ -162,11 +155,10 @@ contract StrategyBoring {
     function balanceChefWant() public view returns (uint256 _amount) {
         (_amount,) = IBoringChef(boringChef).userInfo(pid, address(this));
     }
-    function totalAssets() public view returns (uint256) {
-        return balanceWant().add(balanceChefWant()).add(pendingBoring());
-    }
     function pendingBoring() public view returns (uint256) {
         return IBoringChef(boringChef).pendingBoring(pid, address(this));
     }
-
+    function totalAssets() public view returns (uint256) {
+        return balanceWant().add(balanceChefWant()).add(pendingBoring());
+    }
 }
