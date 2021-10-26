@@ -130,7 +130,7 @@ contract ConvController {
     }
 
     function redeemAll(address _token) external {
-        uint256 _amount = maxRedeemAmount(_token);
+        uint256 _amount = maxRedeemAmount(_token, msg.sender);
         redeem(_token, _amount);
     }
 
@@ -196,9 +196,9 @@ contract ConvController {
         unlocked = true;
     }
 
-    function maxRedeemAmount(address _token) public view returns (uint256) {
-        uint256 _dBalance = IERC20(dTokens[_token]).balanceOf(msg.sender);
-        uint256 _eBalance = IERC20(eTokens[_token]).balanceOf(msg.sender);
+    function maxRedeemAmount(address _token, address _account) public view returns (uint256) {
+        uint256 _dBalance = IERC20(dTokens[_token]).balanceOf(_account);
+        uint256 _eBalance = IERC20(eTokens[_token]).balanceOf(_account);
         if (_dBalance > _eBalance) {
             return _eBalance;
         } else {
