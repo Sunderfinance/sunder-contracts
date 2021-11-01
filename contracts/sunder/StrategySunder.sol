@@ -22,11 +22,11 @@ contract StrategySunder {
     uint256 public performanceFee = 500;
     uint256 constant public performanceMax = 10000;
 
-    address constant public want    = address(0xcC7675C0B1f4DDf3c774e960e4C627F566CB3f0F); // Sunder
-    address constant public xSunder = address(0xbD57731106CD80924F13F57F6e6825c8375b07b2); // xSunder
+    address constant public want    = address(0xA8f2564D5727C4A762568Bb4baBf96BF3E9E3CF3); // Sunder
+    address constant public xSunder = address(0x55D69250d02EFEf22036EEcEd4817f38D484947a); // xSunder
 
-    address constant public dToken = address(0x5f4aB41aF4fCD8F0f5Fc15FD425860672036425f);
-    address constant public eToken = address(0xf2573d779fC477aC4d78b5854C7dE75C35bF0752);
+    address constant public dToken = address(0x5843da2B1E50f5d79138bf7E2437a8E25712d358);
+    address constant public eToken = address(0x7924064825bb80e03Eb756Fa0A4C452394fD6993);
 
     constructor(address _controller) public {
         governance = msg.sender;
