@@ -159,16 +159,7 @@ contract StrategySunder {
 
     function getShare(uint256 _amount) public view returns (uint256) {
         uint256 _balance = IERC20(want).balanceOf(xSunder);
-        /*
         if (_balance == 0) {
-            return 0;
-        }
-        if (_amount > _balance) {
-            _amount = _balance;
-        }
-        */
-
-        if (_amount > _balance) {
             return 0;
         }
         uint256 _total = ISunderBar(xSunder).totalSupply();
