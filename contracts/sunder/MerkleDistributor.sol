@@ -21,7 +21,7 @@ contract MerkleDistributor {
 
     mapping(uint256 => mapping(uint256 => uint256)) private claimedBitMap;
 
-    event Claimed(uint256 index, address account, uint256 amount);
+    event Claimed(address account, uint256 nonce, uint256 index, uint256 amount);
 
     constructor(address token_) public {
         governance = msg.sender;
@@ -53,13 +53,11 @@ contract MerkleDistributor {
         require(msg.sender == governance, "!governance");
         token = token_;
     }
-
     function setMerkleRoot(bytes32 merkleRoot_) external {
         require(msg.sender == governance, "!governance");
         merkleRoot = merkleRoot_;
         nonce++;
     }
-
     function setNonce(uint256 nonce_) external {
         require(msg.sender == governance, "!governance");
         nonce = nonce_;
@@ -100,7 +98,7 @@ contract MerkleDistributor {
         _setClaimed(index);
         require(IERC20(token).transfer(account, amount), 'MerkleDistributor: Transfer failed.');
 
-        emit Claimed(index, account, amount);
+        emit Claimed(account, nonce, index, amount);
     }
 
     function sweepGuardian(address token_) external {
