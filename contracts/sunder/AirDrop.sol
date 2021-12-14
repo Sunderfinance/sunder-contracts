@@ -8,8 +8,6 @@ import "@openzeppelinV3/contracts/math/SafeMath.sol";
 contract AirDrop {
   using SafeMath for uint256;
 
-  address public governance;
-  address public pendingGovernance;
   address public guardian;
   uint256 public effectTime;
 
@@ -28,20 +26,10 @@ contract AirDrop {
   mapping(address => uint256) public lastUpdates;
 
   constructor() public {
-      governance = msg.sender;
       guardian = msg.sender;
       effectTime = 30 days;
   }
 
-  function acceptGovernance() external {
-      require(msg.sender == pendingGovernance, "!pendingGovernance");
-      governance = msg.sender;
-      pendingGovernance = address(0);
-  }
-  function setPendingGovernance(address _pendingGovernance) external {
-      require(msg.sender == governance, "!governance");
-      pendingGovernance = _pendingGovernance;
-  }
   function setGuardian(address _guardian) external {
       require(msg.sender == guardian, "!guardian");
       guardian = _guardian;
@@ -61,7 +49,6 @@ contract AirDrop {
   }
 
   function addUsers(address[] memory users_, uint256[] memory amounts_) external returns (bool) {
-      require(msg.sender == governance, "!governance");
       require(users_.length == amounts_.length, "length error");
       require(start == false, 'already started');
 
@@ -118,6 +105,6 @@ contract AirDrop {
       require(block.timestamp > effectTime, "!effectTime");
 
       uint256 _balance = IERC20(token_).balanceOf(address(this));
-      IERC20(token_).transfer(governance, _balance);
+      IERC20(token_).transfer(guardian, _balance);
   }
 }
