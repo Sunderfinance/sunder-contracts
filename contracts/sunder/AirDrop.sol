@@ -37,8 +37,8 @@ contract AirDrop {
 
   function initialize(address token_, uint256 startTime_, uint256 period_) external {
       require(token == address(0), "already initialized");
-      require(block.timestamp <= startTime_, "!_startTime");
-      require(period_ > 0, "!_period");
+      require(block.timestamp <= startTime_, "!startTime_");
+      require(period_ > 0, "!period_");
 
       token = token_;
       startTime = startTime_;
@@ -68,6 +68,7 @@ contract AirDrop {
       if (_amount > 0) {
           lastUpdates[_user] = block.timestamp;
           receives[_user] = receives[_user].add(_amount);
+          require(receives[_user] <= amounts[_user], 'already claim');
           tokenTransfer(_user, _amount);
       }
   }
@@ -78,11 +79,11 @@ contract AirDrop {
       if (_from < startTime) {
           _from = startTime;
       }
-      if (_to <= startTime || _from >= endTime || _from >= _to) {
-          return 0;
-      }
       if (_to > endTime) {
           _to = endTime;
+      }
+      if (_to <= startTime || _from >= endTime) {
+          return 0;
       }
 
       uint256 _reward = amounts[user_];
