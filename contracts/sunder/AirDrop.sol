@@ -21,8 +21,8 @@ contract AirDrop {
   uint256 public totalGain;
   bool public start;
 
-  mapping(address => uint256) public amounts;
-  mapping(address => uint256) public receives;
+  mapping(address => uint256) public rewards;
+  mapping(address => uint256) public gains;
   mapping(address => uint256) public lastUpdates;
 
   constructor() public {
@@ -38,7 +38,6 @@ contract AirDrop {
   function initialize(address token_, uint256 startTime_, uint256 period_) external {
       require(token == address(0), "already initialized");
       require(block.timestamp <= startTime_, "!startTime_");
-      require(period_ > 0, "!period_");
 
       token = token_;
       startTime = startTime_;
@@ -48,32 +47,34 @@ contract AirDrop {
       start = true;
   }
 
-  function addUsers(address[] memory users_, uint256[] memory amounts_) external returns (bool) {
+  function add(address[] memory users_, uint256[] memory rewards_) external returns (bool) {
       require(start == false, 'already started');
-      require(users_.length == amounts_.length, "length error");
+      require(users_.length == rewards_.length, "length error");
 
-      uint256 _totalAmount = 0;
+      uint256 _totalReward = 0;
       for(uint i; i < users_.length; i++){
-          amounts[users_[i]] = amounts_[i];
-          _totalAmount += amounts_[i];
+          rewards[users_[i]] = rewards_[i];
+          _totalReward += rewards_[i];
       }
-      totalReward = totalReward.add(_totalAmount);
+      totalReward = totalReward.add(_totalReward);
       totalUser = totalUser.add(users_.length);
       return true;
   }
 
-  function claim() external {
+  function claim() external returns (uint256) {
       address _user = msg.sender;
-      uint256 _amount = getReward(_user);
+      uint256 _amount = getClaim(_user);
       if (_amount > 0) {
           lastUpdates[_user] = block.timestamp;
-          receives[_user] = receives[_user].add(_amount);
-          require(receives[_user] <= amounts[_user], 'already claim');
-          tokenTransfer(_user, _amount);
+          gains[_user] = gains[_user].add(_amount);
+          require(gains[_user] <= rewards[_user], 'already claim');
+          _amount = tokenTransfer(_user, _amount);
       }
+
+      return _amount;
   }
 
-  function getReward(address user_) public view returns (uint256) {
+  function getClaim(address user_) public view returns (uint256) {
       uint256 _from = lastUpdates[user_];
       uint256 _to = block.timestamp;
       if (_from < startTime) {
@@ -86,14 +87,14 @@ contract AirDrop {
           return 0;
       }
 
-      uint256 _reward = amounts[user_];
+      uint256 _reward = rewards[user_];
       return _to.sub(_from).mul(_reward).div(period);
   }
 
-  function getInfos(address user_) public view returns (uint256 reward_, uint256 total_, uint256 claim_, uint256 endTime_) {
-      reward_ = getReward(user_);
-      total_ = amounts[user_];
-      claim_ = receives[user_];
+  function getInfos(address user_) public view returns (uint256 claim_, uint256 reward_, uint256 gain_, uint256 endTime_) {
+      claim_ = getClaim(user_);
+      reward_ = rewards[user_];
+      gain_ = gains[user_];
       endTime_ = endTime;
   }
 
