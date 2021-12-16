@@ -49,8 +49,8 @@ contract AirDrop {
   }
 
   function addUsers(address[] memory users_, uint256[] memory amounts_) external returns (bool) {
-      require(users_.length == amounts_.length, "length error");
       require(start == false, 'already started');
+      require(users_.length == amounts_.length, "length error");
 
       uint256 _totalAmount = 0;
       for(uint i; i < users_.length; i++){
@@ -88,6 +88,13 @@ contract AirDrop {
 
       uint256 _reward = amounts[user_];
       return _to.sub(_from).mul(_reward).div(period);
+  }
+
+  function getInfos(address user_) public view returns (uint256 reward_, uint256 total_, uint256 claim_, uint256 endTime_) {
+      reward_ = getReward(user_);
+      total_ = amounts[user_];
+      claim_ = receives[user_];
+      endTime_ = endTime;
   }
 
   function tokenTransfer(address user_, uint256 amount_) internal returns (uint256) {
